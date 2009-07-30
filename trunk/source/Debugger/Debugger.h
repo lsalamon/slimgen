@@ -31,10 +31,17 @@ namespace SlimGen {
 		std::vector<CodeChunkInfo> CodeChunks;
 	};
 
+	std::pair<std::wstring const, std::vector<SlimGen::MethodNativeBlocks>> GetNativeImageInformation( wchar_t* assemblyName );
+
 	class Debugger : public DebuggerImpl {
 	public:
+		Debugger(std::wstring assemblySimpleName);
+
 		HRESULT STDMETHODCALLTYPE CreateAppDomain(ICorDebugProcess *pProcess, ICorDebugAppDomain *pAppDomain);
 		HRESULT STDMETHODCALLTYPE Break(ICorDebugAppDomain *pAppDomain, ICorDebugThread *thread);
+
+		std::vector<MethodNativeBlocks> const& GetNativeMethodBlocks() const;
+		std::wstring const& GetNativeImagePath() const;
 	private:
 		void EnumerateAssemblies( ICorDebugAppDomain * pAppDomain );
 		void EnumerateModules(CComPtr<ICorDebugAssembly> assembly);
@@ -44,6 +51,8 @@ namespace SlimGen {
 		std::wstring GetMethodNameFromDef( CComPtr<IMetaDataImport2> metadata, mdMethodDef methodDef );
 		bool HasAttribute(CComPtr<IMetaDataImport2> metadata, mdMethodDef methodDef);
 
+		std::wstring assemblySimpleName;
+		std::wstring nativeImageName;
 		std::vector<MethodNativeBlocks> methodBlocks;
 	};
 }

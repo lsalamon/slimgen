@@ -29,3 +29,5 @@
 #include <vector>
 #include <iostream>
 #include <string>
+#include <psapi.h>
+#include <mscoree.h>
