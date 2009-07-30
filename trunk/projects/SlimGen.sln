@@ -3,6 +3,8 @@ Microsoft Visual Studio Solution File, Format Version 10.00
 # Visual Studio 2008
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SlimGen.TemplateGenerator", "SlimGen.TemplateGenerator.vcproj", "{1393A94F-5C3E-4C9B-8312-E2B0F5D0153B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HostProcess", "HostProcess\HostProcess.csproj", "{FADA952A-0A43-4D6D-ADD5-7820573CBEA0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -19,6 +21,14 @@ Global
 		{1393A94F-5C3E-4C9B-8312-E2B0F5D0153B}.Release|x64.Build.0 = Release|x64
 		{1393A94F-5C3E-4C9B-8312-E2B0F5D0153B}.Release|x86.ActiveCfg = Release|Win32
 		{1393A94F-5C3E-4C9B-8312-E2B0F5D0153B}.Release|x86.Build.0 = Release|Win32
+		{FADA952A-0A43-4D6D-ADD5-7820573CBEA0}.Debug|x64.ActiveCfg = Debug|x64
+		{FADA952A-0A43-4D6D-ADD5-7820573CBEA0}.Debug|x64.Build.0 = Debug|x64
+		{FADA952A-0A43-4D6D-ADD5-7820573CBEA0}.Debug|x86.ActiveCfg = Debug|x86
+		{FADA952A-0A43-4D6D-ADD5-7820573CBEA0}.Debug|x86.Build.0 = Debug|x86
+		{FADA952A-0A43-4D6D-ADD5-7820573CBEA0}.Release|x64.ActiveCfg = Release|x64
+		{FADA952A-0A43-4D6D-ADD5-7820573CBEA0}.Release|x64.Build.0 = Release|x64
+		{FADA952A-0A43-4D6D-ADD5-7820573CBEA0}.Release|x86.ActiveCfg = Release|x86
+		{FADA952A-0A43-4D6D-ADD5-7820573CBEA0}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
