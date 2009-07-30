@@ -20,7 +20,7 @@
 * THE SOFTWARE.
 */
 
-#include "stdafx.h"
+#include <stdafx.h>
 #include "Debugger.h"
 
 std::wstring const MethodReplacementAttribute = L"SlimGen.Generator.ReplaceMethodNativeAttribute";
@@ -191,8 +191,8 @@ namespace SlimGen {
 
 	bool Debugger::HasAttribute( CComPtr<IMetaDataImport2> metadata, mdMethodDef methodDef )
 	{
-		const void* attribData;
-		ULONG dataLen;
+		const void* attribData = 0;
+		ULONG dataLen = 0;
 		metadata->GetCustomAttributeByName(methodDef, MethodReplacementAttribute.c_str(), &attribData, &dataLen);
 
 		return dataLen > 0;
@@ -221,8 +221,14 @@ namespace SlimGen {
 		return assemblyName;
 	}
 
+	class ComInit {
+	public:
+		ComInit() { CoInitialize(0); }
+		~ComInit() { CoUninitialize(); }
+	};
 	std::pair<std::wstring const, std::vector<SlimGen::MethodNativeBlocks>> GetNativeImageInformation( wchar_t* assemblyName )
 	{
+		ComInit cominit;
 		SlimGen::Debugger debuggerCallback(GetSimpleAssemblyName(assemblyName));
 
 		wchar_t runtimeVersion[256];
@@ -230,10 +236,20 @@ namespace SlimGen {
 		GetRequestedRuntimeVersion(L"HostProcess.exe", runtimeVersion, 256, &runtimeVersionLength);
 
 		CComPtr<ICorDebug> debug;
-		CreateDebuggingInterfaceFromVersion(CorDebugLatestVersion, runtimeVersion, reinterpret_cast<IUnknown**>(&debug));
+		if(FAILED(CreateDebuggingInterfaceFromVersion(CorDebugLatestVersion, runtimeVersion, reinterpret_cast<IUnknown**>(&debug)))) {
+			std::wcout<<L"Unable to create debugging interface."<<std::endl;
+			return std::pair<std::wstring const, std::vector<SlimGen::MethodNativeBlocks>>();
+		}
 
-		debug->Initialize();
-		debug->SetManagedHandler(&debuggerCallback);
+		if(FAILED(debug->Initialize())) {
+			std::wcout<<L"Unable to initialize debugger."<<std::endl;
+			return std::pair<std::wstring const, std::vector<SlimGen::MethodNativeBlocks>>();
+		}
+
+		if(FAILED(debug->SetManagedHandler(&debuggerCallback))) {
+			std::wcout<<L"Unable to configure debugger callback."<<std::endl;
+			return std::pair<std::wstring const, std::vector<SlimGen::MethodNativeBlocks>>();
+		}
 
 		wchar_t commandLine[MAX_PATH];
 		std::wstring commandLineStr = L"HostProcess.exe \"";
@@ -244,10 +260,13 @@ namespace SlimGen {
 
 		STARTUPINFO startInfo = {};
 		startInfo.cb = sizeof(STARTUPINFO);
-		PROCESS_INFORMATION pi;
+		PROCESS_INFORMATION pi = {};
 
 		CComPtr<ICorDebugProcess> process;
-		debug->CreateProcess(L"HostProcess.exe", commandLine, 0, 0, FALSE, DEBUG_PROCESS | DEBUG_ONLY_THIS_PROCESS, 0, 0, &startInfo, &pi, DEBUG_NO_SPECIAL_OPTIONS, &process);
+		if(FAILED(debug->CreateProcess(L"HostProcess.exe", commandLine, 0, 0, FALSE, 0, 0, 0, &startInfo, &pi, DEBUG_NO_SPECIAL_OPTIONS, &process))) {
+			std::wcout<<L"Unable to create process."<<std::endl;
+			return std::pair<std::wstring const, std::vector<SlimGen::MethodNativeBlocks>>();
+		}
 
 		WaitForSingleObject(pi.hProcess, INFINITE);
 

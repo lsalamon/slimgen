@@ -25,7 +25,8 @@ int wmain(int argc, wchar_t** argv) {
 			fout<<L"        <rva length='"
 				<<info.second[i].CodeChunks[j].length
 				<<L"'>"
-				<<info.second[i].CodeChunks[j].startAddr - info.second[i].BaseAddress<<L"</rva>"<<std::endl;
+				<<info.second[i].CodeChunks[j].startAddr - info.second[i].BaseAddress
+				<<L"</rva>"<<std::endl;
 		}
 		fout<<L"    </method>"<<std::endl;
 	}
