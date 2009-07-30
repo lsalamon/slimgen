@@ -22,7 +22,14 @@
 
 #pragma once
 
+#ifdef _DEBUG
+#define DEBUG_PRINT_ENTER std::wcout<<"ENTERED: "<<__FUNCTION__<<std::endl;
+#else
+#define DEBUG_PRINT_ENTER
+#endif
+
 #define CONTINUE_IMPL(p) {\
+	DEBUG_PRINT_ENTER\
 	p->Continue(FALSE);\
 	return S_OK;\
 }
@@ -118,7 +125,7 @@ namespace SlimGen {
 			HRESULT STDMETHODCALLTYPE DebuggerError( 
 			ICorDebugProcess *pProcess,
 			HRESULT errorHR,
-			DWORD errorCode) CONTINUE_IMPL(pProcess)
+			DWORD errorCode) { std::wcout<<"ENTERED: "<<__FUNCTION__<<std::endl; return S_OK; }
 
 			HRESULT STDMETHODCALLTYPE LogMessage( 
 			ICorDebugAppDomain *pAppDomain,
