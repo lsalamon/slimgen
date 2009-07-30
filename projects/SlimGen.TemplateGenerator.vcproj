@@ -44,11 +44,12 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
+				AdditionalIncludeDirectories="&quot;$(ProjectDir)\source&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
-				UsePrecompiledHeader="0"
+				UsePrecompiledHeader="2"
 				WarningLevel="3"
 				DebugInformationFormat="4"
 			/>
@@ -63,7 +64,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="corguids.lib"
+				AdditionalDependencies="corguids.lib Psapi.lib mscoree.lib"
 				OutputFile="$(InputDir)..\bin\x86\$(ConfigurationName)\$(ProjectName).exe"
 				LinkIncremental="2"
 				GenerateDebugInformation="true"
@@ -330,7 +331,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\program.cpp"
+				RelativePath="..\source\program.cpp"
 				>
 			</File>
 			<File

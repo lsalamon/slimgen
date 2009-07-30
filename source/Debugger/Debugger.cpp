@@ -20,20 +20,44 @@
 * THE SOFTWARE.
 */
 
-#include "..\stdafx.h"
+#include "stdafx.h"
 #include "Debugger.h"
 
+std::wstring const MethodReplacementAttribute = L"SlimGen.Generator.ReplaceMethodNativeAttribute";
+
 namespace SlimGen {
+	Debugger::Debugger(std::wstring assemblySimpleName) : assemblySimpleName(assemblySimpleName) {
+	}
+
 	HRESULT STDMETHODCALLTYPE Debugger::CreateAppDomain( ICorDebugProcess *pProcess, ICorDebugAppDomain *pAppDomain )
 	{
 		pAppDomain->Attach();
-		pAppDomain->Continue(FALSE);
+		pProcess->Continue(FALSE);
 		return S_OK;
 	}
 
 	HRESULT STDMETHODCALLTYPE Debugger::Break( ICorDebugAppDomain *pAppDomain, ICorDebugThread *thread )
 	{
 		EnumerateAssemblies(pAppDomain);
+		CComPtr<ICorDebugProcess> process;
+		pAppDomain->GetProcess(&process);
+
+		HPROCESS processHandle;
+		process->GetHandle(&processHandle);
+
+		std::vector<HMODULE> moduleHandles;
+		DWORD numberOfBytesNeeded;
+		EnumProcessModules(processHandle, 0, 0, &numberOfBytesNeeded);
+		moduleHandles.resize(numberOfBytesNeeded / sizeof(HMODULE));
+		EnumProcessModules(processHandle, &moduleHandles[0], moduleHandles.size() * sizeof(HMODULE), &numberOfBytesNeeded);
+
+		for(std::size_t i = 0; i < moduleHandles.size(); ++i) {
+			std::wstring moduleFileName(MAX_PATH, L'\0');
+			GetModuleFileName(moduleHandles[i], &moduleFileName[0], MAX_PATH);
+			if(moduleFileName.find(L"NativeImages") != moduleFileName.npos && moduleFileName.find(assemblySimpleName) != moduleFileName.npos) {
+				nativeImageName = moduleFileName.c_str();
+			}
+		}
 
 		pAppDomain->Continue(FALSE);
 		return S_OK;
@@ -50,10 +74,10 @@ namespace SlimGen {
 		assemblyEnum->Next(assemblies.size(), &assemblies[0], &numberOfAssemblies);
 
 		for(std::size_t i = 0; i < assemblies.size(); ++i) {
-			ULONG32 nameLength;
-			assemblies[i]->GetName(0, &nameLength, 0);
-			std::wstring assemblyName(nameLength, '\0');
-			assemblies[i]->GetName(nameLength, &nameLength, &assemblyName[0]);
+//			ULONG32 nameLength;
+//			assemblies[i]->GetName(0, &nameLength, 0);
+//			std::wstring assemblyName(nameLength, '\0');
+//			assemblies[i]->GetName(nameLength, &nameLength, &assemblyName[0]);
 			EnumerateModules(assemblies[i]);
 		}
 	}
@@ -112,7 +136,7 @@ namespace SlimGen {
 
 			if(nativeCode == 0) {
 				std::wcout<<"Warning: Method marked as ["
-					<<L"ScapeCode.Generator.ReplaceMethodNativeAttribute"
+					<<MethodReplacementAttribute
 					<<"] but does not have native code: "
 					<<typeName<<"."<<methodName<<std::endl;
 			}
@@ -131,6 +155,14 @@ namespace SlimGen {
 			methodBlocks.push_back(block);
 		} while(methodCount > 0);
 		metadata->CloseEnum(methodEnum);
+	}
+
+	std::wstring const& Debugger::GetNativeImagePath() const {
+		return nativeImageName;
+	}
+
+	std::vector<MethodNativeBlocks> const& Debugger::GetNativeMethodBlocks() const {
+		return methodBlocks;
 	}
 
 	std::wstring Debugger::GetTypeNameFromDef( CComPtr<IMetaDataImport2> metadata, mdTypeDef typeDef )
@@ -161,8 +193,65 @@ namespace SlimGen {
 	{
 		const void* attribData;
 		ULONG dataLen;
-		metadata->GetCustomAttributeByName(methodDef, L"ScapeCode.Generator.ReplaceMethodNativeAttribute", &attribData, &dataLen);
+		metadata->GetCustomAttributeByName(methodDef, MethodReplacementAttribute.c_str(), &attribData, &dataLen);
 
 		return dataLen > 0;
 	}
+
+	/*
+	This is a particularly brittle method, it is designed to take in the following types of inputs and return the results indicated:
+	"SlimDX, Culture=en, PublicKeyToken=a5d015c7d5a0b012, Version=1.0.0.0"
+	returns "SlimDX"
+	"C:\Projects\SlimDX\Build\x86\release\SlimDX.dll"
+	returns "SlimDX.dll"
+	"C:/Projects/SlimDX/Build/x86/release/SlimDX.dll"
+	returns "SlimDX.dll"
+	*/
+	std::wstring GetSimpleAssemblyName(std::wstring assemblyName) {
+		if(assemblyName.find(L",") != assemblyName.npos) {
+			return assemblyName.substr(0, assemblyName.find(L","));
+		} else {
+			if(assemblyName.find_last_of(L"\\") != assemblyName.npos) {
+				return assemblyName.substr(assemblyName.find_last_of(L"\\") + 1);
+			} else if(assemblyName.find_last_of(L"/")) {
+				return assemblyName.substr(assemblyName.find_last_of(L"/") + 1);
+			}
+		}
+
+		return assemblyName;
+	}
+
+	std::pair<std::wstring const, std::vector<SlimGen::MethodNativeBlocks>> GetNativeImageInformation( wchar_t* assemblyName )
+	{
+		SlimGen::Debugger debuggerCallback(GetSimpleAssemblyName(assemblyName));
+
+		wchar_t runtimeVersion[256];
+		DWORD runtimeVersionLength;
+		GetRequestedRuntimeVersion(L"HostProcess.exe", runtimeVersion, 256, &runtimeVersionLength);
+
+		CComPtr<ICorDebug> debug;
+		CreateDebuggingInterfaceFromVersion(CorDebugLatestVersion, runtimeVersion, reinterpret_cast<IUnknown**>(&debug));
+
+		debug->Initialize();
+		debug->SetManagedHandler(&debuggerCallback);
+
+		wchar_t commandLine[MAX_PATH];
+		std::wstring commandLineStr = L"HostProcess.exe \"";
+		commandLineStr += assemblyName;
+		commandLineStr += L"\"";
+
+		wcsncpy_s(commandLine, MAX_PATH, commandLineStr.c_str(), commandLineStr.size());
+
+		STARTUPINFO startInfo = {};
+		startInfo.cb = sizeof(STARTUPINFO);
+		PROCESS_INFORMATION pi;
+
+		CComPtr<ICorDebugProcess> process;
+		debug->CreateProcess(L"HostProcess.exe", commandLine, 0, 0, FALSE, DEBUG_PROCESS | DEBUG_ONLY_THIS_PROCESS, 0, 0, &startInfo, &pi, DEBUG_NO_SPECIAL_OPTIONS, &process);
+
+		WaitForSingleObject(pi.hProcess, INFINITE);
+
+		return std::make_pair(debuggerCallback.GetNativeImagePath(), debuggerCallback.GetNativeMethodBlocks());
+	}
+
 }
