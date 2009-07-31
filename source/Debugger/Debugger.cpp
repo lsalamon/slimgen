@@ -189,8 +189,7 @@ namespace SlimGen {
 		return methodName;
 	}
 
-	bool Debugger::HasAttribute( CComPtr<IMetaDataImport2> metadata, mdMethodDef methodDef )
-	{
+	bool Debugger::HasAttribute( CComPtr<IMetaDataImport2> metadata, mdMethodDef methodDef ) {
 		const void* attribData = 0;
 		ULONG dataLen = 0;
 		metadata->GetCustomAttributeByName(methodDef, MethodReplacementAttribute.c_str(), &attribData, &dataLen);
