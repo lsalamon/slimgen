@@ -6,22 +6,32 @@
 
 void GenerateTemplateAsm(std::wstring methodName, CORDB_ADDRESS rva, std::size_t length) {
 	std::wofstream fout((methodName + L".asm").c_str());
-	fout<<";-------------------------------------------------------------------------------"<<std::endl
-		<<"; "<<methodName<<std::endl
-		<<"; RVA: 0x"<<std::hex<<rva<<std::endl
-		<<"; Length: "<<std::dec<<length<<std::endl
-		<<"; Calling convention is __fastcall:"<<std::endl
-		<<";  X86: First two arguments in registers ECX and EDX the remainder are on the"<<std::endl
-		<<";       stack right to left."<<std::endl
-		<<";  X64: First four arguments in registers RCX, RDX, R8 and R9 the remainder are"<<std::endl
-		<<";       on the stack."<<std::endl
-		<<";-------------------------------------------------------------------------------"<<std::endl
-		<<"start:"<<std::endl
-		<<"            ret      4"<<std::endl
-		<<";-------------------------------------------------------------------------------"<<std::endl
-		<<"; Buffer out to the size of the original method: "<<std::endl
-		<<"; WARNING: DO NOT EXCEED THIS SIZE"<<std::endl
-		<<"            TIMES 0x"<<std::hex<<length<<"-($-$$) DB 0xCC"<<std::endl;
+	fout<<L";-------------------------------------------------------------------------------"<<std::endl
+		<<L"; nasm -fbin -o"<<methodName
+#ifdef _M_X64
+		<<L".X64"
+#else
+		<<L".X32"
+#endif
+		<<" "<<methodName<<L".asm"<<std::endl
+		<<L"; "<<methodName<<std::endl
+		<<L"; RVA: 0x"<<std::hex<<rva<<std::endl
+		<<L"; Length: "<<std::dec<<length<<std::endl
+		<<L"; Calling convention is __fastcall:"<<std::endl
+#ifdef _M_X64
+		<<L";  X64: First four arguments in registers RCX, RDX, R8 and R9 the remainder are"<<std::endl
+		<<L";       on the stack."<<std::endl
+#else
+		<<L";  X86: First two arguments in registers ECX and EDX the remainder are on the"<<std::endl
+		<<L";       stack right to left."<<std::endl
+#endif
+		<<L";-------------------------------------------------------------------------------"<<std::endl
+		<<L"start:"<<std::endl
+		<<L"            ret      4"<<std::endl
+		<<L";-------------------------------------------------------------------------------"<<std::endl
+		<<L"; Buffer out to the size of the original method: "<<std::endl
+		<<L"; WARNING: DO NOT EXCEED THIS SIZE"<<std::endl
+		<<L"            TIMES 0x"<<std::hex<<length<<L"-($-$$) DB 0xCC"<<std::endl;
 }
 
 int wmain(int argc, wchar_t** argv) {
