@@ -165,8 +165,7 @@ namespace SlimGen {
 		return methodBlocks;
 	}
 
-	std::wstring Debugger::GetTypeNameFromDef( CComPtr<IMetaDataImport2> metadata, mdTypeDef typeDef )
-	{
+	std::wstring Debugger::GetTypeNameFromDef( CComPtr<IMetaDataImport2> metadata, mdTypeDef typeDef ) {
 		wchar_t typeName[256];
 		ULONG typeNameLength;
 		DWORD flags;
