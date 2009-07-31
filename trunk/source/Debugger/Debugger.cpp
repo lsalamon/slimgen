@@ -38,10 +38,8 @@ namespace SlimGen {
 
 	HRESULT STDMETHODCALLTYPE Debugger::Break( ICorDebugAppDomain *pAppDomain, ICorDebugThread *thread )
 	{
-		EnumerateAssemblies(pAppDomain);
 		CComPtr<ICorDebugProcess> process;
 		pAppDomain->GetProcess(&process);
-
 		HPROCESS processHandle;
 		process->GetHandle(&processHandle);
 
@@ -53,11 +51,16 @@ namespace SlimGen {
 
 		for(std::size_t i = 0; i < moduleHandles.size(); ++i) {
 			std::wstring moduleFileName(MAX_PATH, L'\0');
-			GetModuleFileName(moduleHandles[i], &moduleFileName[0], MAX_PATH);
+			GetModuleFileNameEx(processHandle, moduleHandles[i], &moduleFileName[0], MAX_PATH);
 			if(moduleFileName.find(L"NativeImages") != moduleFileName.npos && moduleFileName.find(assemblySimpleName) != moduleFileName.npos) {
 				nativeImageName = moduleFileName.c_str();
+#ifdef _DEBUG
+				std::wcout<<moduleFileName.c_str()<<std::endl;
+#endif
 			}
 		}
+
+		EnumerateAssemblies(pAppDomain);
 
 		pAppDomain->Continue(FALSE);
 		return S_OK;
@@ -74,10 +77,6 @@ namespace SlimGen {
 		assemblyEnum->Next(assemblies.size(), &assemblies[0], &numberOfAssemblies);
 
 		for(std::size_t i = 0; i < assemblies.size(); ++i) {
-//			ULONG32 nameLength;
-//			assemblies[i]->GetName(0, &nameLength, 0);
-//			std::wstring assemblyName(nameLength, '\0');
-//			assemblies[i]->GetName(nameLength, &nameLength, &assemblyName[0]);
 			EnumerateModules(assemblies[i]);
 		}
 	}

@@ -12,12 +12,15 @@ namespace HostProcess {
 
 			var fi = new FileInfo(args[0]);
 
-			var assembly = fi.Exists ? Assembly.LoadFile(fi.FullName) : Assembly.Load(new AssemblyName(args[0]));
+			var assembly = fi.Exists ? Assembly.LoadFile(fi.FullName) : AppDomain.CurrentDomain.Load(new AssemblyName(args[0]));
 
-			foreach (var type in assembly.GetTypes()) { }
+			foreach (var type in assembly.GetTypes()) {
+				type.GetMethods();
+			}
 
-			if (System.Diagnostics.Debugger.IsAttached)
+			if (System.Diagnostics.Debugger.IsAttached) {
 				System.Diagnostics.Debugger.Break();
+			}
 		}
 	}
 }
