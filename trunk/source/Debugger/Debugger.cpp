@@ -22,6 +22,7 @@
 
 #include <stdafx.h>
 #include "Debugger.h"
+#include <locale>
 
 std::wstring const MethodReplacementAttribute = L"SlimGen.Generator.ReplaceMethodNativeAttribute";
 
@@ -52,7 +53,9 @@ namespace SlimGen {
 		for(std::size_t i = 0; i < moduleHandles.size(); ++i) {
 			std::wstring moduleFileName(MAX_PATH, L'\0');
 			GetModuleFileNameEx(processHandle, moduleHandles[i], &moduleFileName[0], MAX_PATH);
-			if(moduleFileName.find(L"NativeImages") != moduleFileName.npos && moduleFileName.find(assemblySimpleName) != moduleFileName.npos) {
+			std::locale loc;
+			std::use_facet<std::ctype<wchar_t> > (loc).tolower(&moduleFileName[0], &moduleFileName[moduleFileName.size()]);
+			if(moduleFileName.find(L"nativeimages") != moduleFileName.npos && moduleFileName.find(assemblySimpleName) != moduleFileName.npos) {
 				nativeImageName = moduleFileName.c_str();
 #ifdef _DEBUG
 				std::wcout<<moduleFileName.c_str()<<std::endl;
@@ -148,7 +151,7 @@ namespace SlimGen {
 			std::vector<CodeChunkInfo> codeChunks(numberOfCodeChunks);
 			nativeCode2->GetCodeChunks(numberOfCodeChunks, &numberOfCodeChunks, &codeChunks[0]);
 
-			MethodNativeBlocks block = {0, methodName, codeChunks};
+			MethodNativeBlocks block = {0, typeName + L"." + methodName, codeChunks};
 			module->GetBaseAddress(&block.BaseAddress);
 
 			methodBlocks.push_back(block);
@@ -198,24 +201,31 @@ namespace SlimGen {
 	/*
 	This is a particularly brittle method, it is designed to take in the following types of inputs and return the results indicated:
 	"SlimDX, Culture=en, PublicKeyToken=a5d015c7d5a0b012, Version=1.0.0.0"
-	returns "SlimDX"
+	returns "slimdx"
 	"C:\Projects\SlimDX\Build\x86\release\SlimDX.dll"
-	returns "SlimDX.dll"
+	returns "slimdx"
 	"C:/Projects/SlimDX/Build/x86/release/SlimDX.dll"
-	returns "SlimDX.dll"
+	returns "slimdx"
 	*/
 	std::wstring GetSimpleAssemblyName(std::wstring assemblyName) {
+		std::wstring result;
 		if(assemblyName.find(L",") != assemblyName.npos) {
-			return assemblyName.substr(0, assemblyName.find(L","));
+			result = assemblyName.substr(0, assemblyName.find(L","));
 		} else {
 			if(assemblyName.find_last_of(L"\\") != assemblyName.npos) {
-				return assemblyName.substr(assemblyName.find_last_of(L"\\") + 1);
+				result = assemblyName.substr(assemblyName.find_last_of(L"\\") + 1);
+				if(result.find(L"."))
+					result = result.substr(0, result.find(L"."));
 			} else if(assemblyName.find_last_of(L"/")) {
-				return assemblyName.substr(assemblyName.find_last_of(L"/") + 1);
+				result = assemblyName.substr(assemblyName.find_last_of(L"/") + 1);
+				if(result.find(L"."))
+					result = result.substr(0, result.find(L"."));
 			}
 		}
 
-		return assemblyName;
+		std::locale loc;
+		std::use_facet<std::ctype<wchar_t> >(loc).tolower(&result[0], &result[result.size()]);
+		return result;
 	}
 
 	class ComInit {

@@ -2,6 +2,27 @@
 #include "Debugger\Debugger.h"
 
 #include <fstream>
+#include <sstream>
+
+void GenerateTemplateAsm(std::wstring methodName, CORDB_ADDRESS rva, std::size_t length) {
+	std::wofstream fout((methodName + L".asm").c_str());
+	fout<<";-------------------------------------------------------------------------------"<<std::endl
+		<<"; "<<methodName<<std::endl
+		<<"; RVA: 0x"<<std::hex<<rva<<std::endl
+		<<"; Length: "<<std::dec<<length<<std::endl
+		<<"; Calling convention is __fastcall:"<<std::endl
+		<<";  X86: First two arguments in registers ECX and EDX the remainder are on the"<<std::endl
+		<<";       stack right to left."<<std::endl
+		<<";  X64: First four arguments in registers RCX, RDX, R8 and R9 the remainder are"<<std::endl
+		<<";       on the stack."<<std::endl
+		<<";-------------------------------------------------------------------------------"<<std::endl
+		<<"start:"<<std::endl
+		<<"            ret      4"<<std::endl
+		<<";-------------------------------------------------------------------------------"<<std::endl
+		<<"; Buffer out to the size of the original method: "<<std::endl
+		<<"; WARNING: DO NOT EXCEED THIS SIZE"<<std::endl
+		<<"            TIMES 0x"<<std::hex<<length<<"-($-$$) DB 0xCC"<<std::endl;
+}
 
 int wmain(int argc, wchar_t** argv) {
 	if(argc < 3) {
@@ -19,14 +40,29 @@ int wmain(int argc, wchar_t** argv) {
 	std::wofstream fout(argv[2]);
 	fout<<L"<?xml version=\"1.0\" encoding=\"utf-8\"?>"<<std::endl;
 	fout<<L"<methods>"<<std::endl;
+//	fout<<L"    <nativePath>"<<info.first<<"</nativePath>"<<std::endl;
 	for(std::size_t i = 0; i < info.second.size(); ++i) {
 		fout<<L"    <method name='"<<info.second[i].MethodName<<L"'>"<<std::endl;
 		for(std::size_t j = 0; j < info.second[i].CodeChunks.size(); ++j) {
-			fout<<L"        <rva length='"
+			/*fout<<L"        <rva length='"
 				<<info.second[i].CodeChunks[j].length
 				<<L"'>"
 				<<info.second[i].CodeChunks[j].startAddr - info.second[i].BaseAddress
-				<<L"</rva>"<<std::endl;
+				<<L"</rva>"<<std::endl;*/
+
+			std::wstringstream ss;
+			ss<<info.second[i].MethodName;
+			if(info.second[i].CodeChunks.size() > 1) {
+				ss<<j;
+			}
+			GenerateTemplateAsm(ss.str(), info.second[i].CodeChunks[j].startAddr - info.second[i].BaseAddress, info.second[i].CodeChunks[j].length);
+			fout<<L"        <code file='"<<ss.str()<<L"."
+#ifdef _M_X64
+				<<L"X64"
+#else
+				<<L"X86"
+#endif
+				<<"'/>"<<std::endl;
 		}
 		fout<<L"    </method>"<<std::endl;
 	}
