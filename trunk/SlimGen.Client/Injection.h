@@ -19,9 +19,20 @@
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 * THE SOFTWARE.
 */
+#pragma once
 
-#include "Injection.h"
+#include <windows.h>
+#include <fstream>
+#include <string>
+#include <vector>
+#include <cassert>
 
-int main()
+struct MethodDescriptor
 {
-}
+	DWORD RVA;
+	DWORD MaxSize;
+	std::wstring Name;
+	std::wstring ReplacementFile;
+};
+
+int InjectNativeCode(const std::wstring &imagePath, const std::vector<MethodDescriptor> &methodDescriptors);
