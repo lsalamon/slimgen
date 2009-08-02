@@ -31,7 +31,7 @@ namespace SlimGen {
 		std::vector<CodeChunkInfo> CodeChunks;
 	};
 
-	std::pair<std::wstring const, std::vector<SlimGen::MethodNativeBlocks>> GetNativeImageInformation( wchar_t* assemblyName );
+	std::pair<std::wstring, std::vector<SlimGen::MethodNativeBlocks>> GetNativeImageInformation( wchar_t* assemblyName );
 
 	class Debugger : public DebuggerImpl {
 	public:

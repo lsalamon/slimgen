@@ -20,8 +20,17 @@
 * THE SOFTWARE.
 */
 
-#include "stdafx.h"
-#include "Debugger\Debugger.h"
+#include <Windows.h>
+#include <atlbase.h>
+#include <atlcom.h>
+#include <cor.h>
+#include <cordebug.h>
+#include <vector>
+#include <iostream>
+#include <string>
+#include <psapi.h>
+#include <mscoree.h>
+#include "..\DebuggerLib\Debugger.h"
 
 #include <fstream>
 #include <sstream>

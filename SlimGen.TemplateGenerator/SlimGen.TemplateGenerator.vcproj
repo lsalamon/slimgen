@@ -49,7 +49,7 @@
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
-				UsePrecompiledHeader="1"
+				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				DebugInformationFormat="4"
 			/>
@@ -65,7 +65,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="corguids.lib Psapi.lib mscoree.lib"
-				OutputFile="$(InputDir)..\bin\x86\$(ConfigurationName)\tg.exe"
+				OutputFile="$(OutDir)\x86\tg.exe"
 				LinkIncremental="2"
 				GenerateDebugInformation="true"
 				SubSystem="1"
@@ -119,6 +119,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)DebuggerLib&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -139,7 +140,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="corguids.lib Psapi.lib mscoree.lib"
-				OutputFile="$(InputDir)..\bin\x64\$(ConfigurationName)\tg.exe"
+				OutputFile="$(OutDir)\x64\tg.exe"
 				LinkIncremental="2"
 				GenerateDebugInformation="true"
 				SubSystem="1"
@@ -197,7 +198,7 @@
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
-				UsePrecompiledHeader="1"
+				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				DebugInformationFormat="3"
 			/>
@@ -213,7 +214,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="corguids.lib Psapi.lib mscoree.lib"
-				OutputFile="$(InputDir)..\bin\x86\$(ConfigurationName)\tg.exe"
+				OutputFile="$(OutDir)\x86\tg.exe"
 				LinkIncremental="1"
 				GenerateDebugInformation="true"
 				SubSystem="1"
@@ -290,7 +291,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="corguids.lib Psapi.lib mscoree.lib"
-				OutputFile="$(InputDir)..\bin\x64\$(ConfigurationName)\tg.exe"
+				OutputFile="$(OutDir)\x64\tg.exe"
 				LinkIncremental="1"
 				GenerateDebugInformation="true"
 				SubSystem="1"
@@ -322,6 +323,10 @@
 		</Configuration>
 	</Configurations>
 	<References>
+		<ProjectReference
+			ReferencedProjectIdentifier="{365E7052-4C5A-4CDA-B01C-6098201E13FC}"
+			RelativePathToProject=".\DebuggerLib\DebuggerLib.vcproj"
+		/>
 	</References>
 	<Files>
 		<Filter
@@ -330,15 +335,7 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath="..\source\Debugger\Debugger.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\source\program.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\source\stdafx.cpp"
+				RelativePath=".\program.cpp"
 				>
 			</File>
 		</Filter>
@@ -347,18 +344,6 @@
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
-			<File
-				RelativePath="..\source\Debugger\Debugger.h"
-				>
-			</File>
-			<File
-				RelativePath="..\source\Debugger\DebuggerImpl.h"
-				>
-			</File>
-			<File
-				RelativePath="..\source\stdafx.h"
-				>
-			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"
