@@ -20,9 +20,19 @@
 * THE SOFTWARE.
 */
 
-#include <stdafx.h>
+#include <Windows.h>
+#include <atlbase.h>
+#include <atlcom.h>
+#include <cor.h>
+#include <cordebug.h>
+#include <vector>
+#include <iostream>
+#include <string>
+#include <psapi.h>
+#include <mscoree.h>
+
 #include "Debugger.h"
-#include <locale>
+
 
 std::wstring const MethodReplacementAttribute = L"SlimGen.Generator.ReplaceMethodNativeAttribute";
 
@@ -233,7 +243,8 @@ namespace SlimGen {
 		ComInit() { CoInitialize(0); }
 		~ComInit() { CoUninitialize(); }
 	};
-	std::pair<std::wstring const, std::vector<SlimGen::MethodNativeBlocks>> GetNativeImageInformation( wchar_t* assemblyName )
+
+	std::pair<std::wstring, std::vector<SlimGen::MethodNativeBlocks>> GetNativeImageInformation( wchar_t* assemblyName )
 	{
 		ComInit cominit;
 		SlimGen::Debugger debuggerCallback(GetSimpleAssemblyName(assemblyName));
@@ -279,5 +290,4 @@ namespace SlimGen {
 
 		return std::make_pair(debuggerCallback.GetNativeImagePath(), debuggerCallback.GetNativeMethodBlocks());
 	}
-
 }
