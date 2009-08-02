@@ -82,21 +82,20 @@ int wmain(int argc, wchar_t** argv) {
 		return 0;
 	}
 
-	std::pair<std::wstring, std::vector<SlimGen::MethodNativeBlocks>> info = SlimGen::GetNativeImageInformation(argv[1]);
+	std::pair<std::wstring, std::vector<SlimGen::MethodNativeBlocks>> info;
+	try {
+		info = SlimGen::GetNativeImageInformation(argv[1]);
+	} catch(std::runtime_error& error) {
+		std::cout<<"Unhandled exception encountered: "<<error.what()<<std::endl;
+		return -1;
+	}
 
 	std::wofstream fout(argv[2]);
 	fout<<L"<?xml version=\"1.0\" encoding=\"utf-8\"?>"<<std::endl;
 	fout<<L"<methods>"<<std::endl;
-//	fout<<L"    <nativePath>"<<info.first<<"</nativePath>"<<std::endl;
 	for(std::size_t i = 0; i < info.second.size(); ++i) {
 		fout<<L"    <method name='"<<info.second[i].MethodName<<L"'>"<<std::endl;
 		for(std::size_t j = 0; j < info.second[i].CodeChunks.size(); ++j) {
-			/*fout<<L"        <rva length='"
-				<<info.second[i].CodeChunks[j].length
-				<<L"'>"
-				<<info.second[i].CodeChunks[j].startAddr - info.second[i].BaseAddress
-				<<L"</rva>"<<std::endl;*/
-
 			std::wstringstream ss;
 			ss<<info.second[i].MethodName;
 			if(info.second[i].CodeChunks.size() > 1) {

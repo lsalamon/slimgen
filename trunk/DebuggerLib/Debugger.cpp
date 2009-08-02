@@ -56,13 +56,24 @@ namespace SlimGen {
 
 		std::vector<HMODULE> moduleHandles;
 		DWORD numberOfBytesNeeded;
-		EnumProcessModules(processHandle, 0, 0, &numberOfBytesNeeded);
+		if(!EnumProcessModules(processHandle, 0, 0, &numberOfBytesNeeded)) {
+			std::wcout<<"Error: Unable to enumerate process modules.";
+			pAppDomain->Continue(FALSE);
+			return S_OK;
+		}
 		moduleHandles.resize(numberOfBytesNeeded / sizeof(HMODULE));
-		EnumProcessModules(processHandle, &moduleHandles[0], moduleHandles.size() * sizeof(HMODULE), &numberOfBytesNeeded);
+		if(!EnumProcessModules(processHandle, &moduleHandles[0], moduleHandles.size() * sizeof(HMODULE), &numberOfBytesNeeded)) {
+			std::wcout<<"Error: Unable to enumerate process modules.";
+			pAppDomain->Continue(FALSE);
+			return S_OK;
+		}
 
 		for(std::size_t i = 0; i < moduleHandles.size(); ++i) {
 			std::wstring moduleFileName(MAX_PATH, L'\0');
-			GetModuleFileNameEx(processHandle, moduleHandles[i], &moduleFileName[0], MAX_PATH);
+			if(!GetModuleFileNameEx(processHandle, moduleHandles[i], &moduleFileName[0], MAX_PATH)) {
+				std::wcout<<"Warning: Unable to get module file name.";
+				continue;
+			}
 			std::locale loc;
 			std::use_facet<std::ctype<wchar_t> > (loc).tolower(&moduleFileName[0], &moduleFileName[moduleFileName.size()]);
 			if(moduleFileName.find(L"nativeimages") != moduleFileName.npos && moduleFileName.find(assemblySimpleName) != moduleFileName.npos) {
@@ -73,6 +84,11 @@ namespace SlimGen {
 			}
 		}
 
+		if(nativeImageName.empty()) {
+			std::wcout<<"Error: No native image for assembly.";
+			pAppDomain->Continue(FALSE);
+			return S_OK;
+		}
 		EnumerateAssemblies(pAppDomain);
 
 		pAppDomain->Continue(FALSE);
@@ -151,6 +167,7 @@ namespace SlimGen {
 					<<MethodReplacementAttribute
 					<<"] but does not have native code: "
 					<<typeName<<"."<<methodName<<std::endl;
+				continue;
 			}
 
 			CComPtr<ICorDebugCode2> nativeCode2;
@@ -251,12 +268,13 @@ namespace SlimGen {
 
 		wchar_t runtimeVersion[256];
 		DWORD runtimeVersionLength;
-		GetRequestedRuntimeVersion(L"HostProcess.exe", runtimeVersion, 256, &runtimeVersionLength);
+		if(FAILED(GetRequestedRuntimeVersion(L"HostProcess.exe", runtimeVersion, 256, &runtimeVersionLength))) {
+			throw std::runtime_error("Unable to get .Net runtime version");
+		}
 
 		CComPtr<ICorDebug> debug;
 		if(FAILED(CreateDebuggingInterfaceFromVersion(CorDebugLatestVersion, runtimeVersion, reinterpret_cast<IUnknown**>(&debug)))) {
-			std::wcout<<L"Unable to create debugging interface."<<std::endl;
-			return std::pair<std::wstring const, std::vector<SlimGen::MethodNativeBlocks>>();
+			throw std::runtime_error("Unable to create debugging interface.");
 		}
 
 		if(FAILED(debug->Initialize())) {
@@ -265,8 +283,7 @@ namespace SlimGen {
 		}
 
 		if(FAILED(debug->SetManagedHandler(&debuggerCallback))) {
-			std::wcout<<L"Unable to configure debugger callback."<<std::endl;
-			return std::pair<std::wstring const, std::vector<SlimGen::MethodNativeBlocks>>();
+			throw std::runtime_error("Unable to configure debugger callback.");
 		}
 
 		wchar_t commandLine[MAX_PATH];
@@ -282,8 +299,7 @@ namespace SlimGen {
 
 		CComPtr<ICorDebugProcess> process;
 		if(FAILED(debug->CreateProcess(L"HostProcess.exe", commandLine, 0, 0, FALSE, 0, 0, 0, &startInfo, &pi, DEBUG_NO_SPECIAL_OPTIONS, &process))) {
-			std::wcout<<L"Unable to create process."<<std::endl;
-			return std::pair<std::wstring const, std::vector<SlimGen::MethodNativeBlocks>>();
+			throw std::runtime_error("Unable to create process.");
 		}
 
 		WaitForSingleObject(pi.hProcess, INFINITE);
