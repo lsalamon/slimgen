@@ -131,19 +131,18 @@ int InjectNativeCode(const std::wstring &imagePath, const std::vector<MethodDesc
 		if (first == sections.end())
 			continue;
 
-		std::ifstream replacementFile(method->ReplacementFile.c_str());
-		if (!replacementFile)
+		HANDLE replacementFile = CreateFile(method->ReplacementFile.c_str(), GENERIC_READ, 0, 0, OPEN_EXISTING, 0, 0);
+		if(replacementFile == INVALID_HANDLE_VALUE)
 			continue;
 
-		replacementFile.seekg(0, std::ios::end);
-		DWORD size = replacementFile.tellg();
-		std::vector<char> objData(size);
-		replacementFile.read(&objData[0], size);
-		if (size > method->MaxSize)
+		DWORD size = GetFileSize(replacementFile, 0);
+
+		if(size > method->MaxSize) {
 			continue;
+		}
 
 		long fileOffset = method->RVA - first->VirtualAddress + first->PointerToRawData;
-		memcpy(image + fileOffset, &objData[0], size);
+		ReadFile(replacementFile, image + fileOffset, size, &size, 0);
 	}
 
 	int result = 0;
