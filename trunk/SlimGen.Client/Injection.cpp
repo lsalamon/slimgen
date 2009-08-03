@@ -22,6 +22,15 @@
 
 #include "Injection.h"
 
+struct ScopedHandle {
+	ScopedHandle() : handle(INVALID_HANDLE_VALUE) { }
+	ScopedHandle(HANDLE handle) : handle(handle) { }
+	~ScopedHandle() { if(handle != INVALID_HANDLE_VALUE) CloseHandle(handle); }
+	HANDLE release() { HANDLE tmp = handle; handle = INVALID_HANDLE_VALUE; return tmp; }
+	operator HANDLE&() { return handle; }
+	HANDLE handle;
+};
+
 bool CopyTemporaryImage(const std::wstring &imagePath, wchar_t *tempFileName)
 {
 	wchar_t tempPath[MAX_PATH];
@@ -39,26 +48,27 @@ bool CopyTemporaryImage(const std::wstring &imagePath, wchar_t *tempFileName)
 
 char *MapImageFile(const std::wstring &imagePath, HANDLE *file, HANDLE *mapping)
 {
-	HANDLE fileHandle = CreateFile(imagePath.c_str(), GENERIC_READ | GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+	ScopedHandle fileHandle = CreateFile(imagePath.c_str(), GENERIC_READ | GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 	if (fileHandle == NULL || fileHandle == INVALID_HANDLE_VALUE)
 		return NULL;
 
-	HANDLE fileMapping = CreateFileMapping(fileHandle, NULL, PAGE_READWRITE, 0, 0, NULL);
+	ScopedHandle fileMapping = CreateFileMapping(fileHandle, NULL, PAGE_READWRITE, 0, 0, NULL);
 	if (fileMapping == NULL)
 	{
-		CloseHandle(fileHandle);
 		return NULL;
 	}
 
 	LPVOID pointer = MapViewOfFile(fileMapping, FILE_MAP_ALL_ACCESS, 0, 0, 0);
 	if (pointer == NULL)
 	{
-		CloseHandle(fileMapping);
-		CloseHandle(fileHandle);
+		return NULL;
 	}
 
 	*file = fileHandle;
 	*mapping = fileMapping;
+
+	fileHandle.release();
+	fileMapping.release();
 
 	return reinterpret_cast<char*>(pointer);
 }
@@ -131,7 +141,7 @@ int InjectNativeCode(const std::wstring &imagePath, const std::vector<MethodDesc
 		if (first == sections.end())
 			continue;
 
-		HANDLE replacementFile = CreateFile(method->ReplacementFile.c_str(), GENERIC_READ, 0, 0, OPEN_EXISTING, 0, 0);
+		ScopedHandle replacementFile = CreateFile(method->ReplacementFile.c_str(), GENERIC_READ, 0, 0, OPEN_EXISTING, 0, 0);
 		if(replacementFile == INVALID_HANDLE_VALUE)
 			continue;
 
