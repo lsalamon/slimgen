@@ -34,12 +34,24 @@ struct ScopedHandle
 	HANDLE handle;
 };
 
-struct TempFileCleanup
+struct TempFile
 {
-	TempFileCleanup(wchar_t *fileName) : fileName(fileName) { }
-	~TempFileCleanup() { if (fileName != NULL) DeleteFile(fileName); }
+	TempFile() {
+		wchar_t tempPath[MAX_PATH];
+		if (!GetTempPath(MAX_PATH, tempPath))
+			return;
 
-	wchar_t *fileName;
+		wchar_t tempName[MAX_PATH];
+		if (!GetTempFileName(tempPath, L"SGC", 0, tempName))
+			return;
+
+		fileName = tempName;
+	}
+
+	operator wchar_t const*() const { if(fileName.empty()) return 0; return fileName.c_str(); }
+	~TempFile() { if (fileName.empty()) DeleteFile(fileName.c_str()); }
+
+	std::wstring fileName;
 };
 
 class FileMappingView
@@ -74,18 +86,13 @@ int InjectNativeCode(const std::wstring &imagePath, const std::vector<MethodDesc
 	assert(sizeof(short) == 2);
 	assert(sizeof(int) == 4);
 
-	wchar_t tempPath[MAX_PATH];
-	if (!GetTempPath(MAX_PATH, tempPath))
-		return 1;
-
-	wchar_t tempFileName[MAX_PATH];
-	if (!GetTempFileName(tempPath, L"SGC", 0, tempFileName))
+	TempFile fileCleanup;
+	if(!fileCleanup)
 		return 2;
 
-	if (!CopyFile(imagePath.c_str(), tempFileName, true))
+	if (!CopyFile(imagePath.c_str(), fileCleanup, true))
 		return 3;
 
-	TempFileCleanup fileCleanup(tempFileName);
 	ScopedHandle fileHandle = CreateFile(imagePath.c_str(), GENERIC_READ | GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 	if (fileHandle == NULL || fileHandle == INVALID_HANDLE_VALUE)
 		return 4;
@@ -138,7 +145,7 @@ int InjectNativeCode(const std::wstring &imagePath, const std::vector<MethodDesc
 		ReadFile(replacementFile, fileView.BasePointer() + fileOffset, size, &size, 0);
 	}
 
-	if (!CopyFile(tempFileName, imagePath.c_str(), false))
+	if (!CopyFile(fileCleanup, imagePath.c_str(), false))
 		return 8;
 
 	return 0;
