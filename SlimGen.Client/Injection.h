@@ -22,17 +22,15 @@
 #pragma once
 
 #include <windows.h>
-#include <fstream>
 #include <string>
 #include <vector>
 #include <cassert>
 
 struct MethodDescriptor
 {
-	DWORD RVA;
-	DWORD MaxSize;
-	std::wstring Name;
+	DWORD BaseAddress;
+	DWORD Length;
 	std::wstring ReplacementFile;
 };
 
-int InjectNativeCode(const std::wstring &imagePath, const std::vector<MethodDescriptor> &methodDescriptors);
+int InjectNativeCode(const std::wstring &imagePath, const std::vector<MethodDescriptor> &methods);
