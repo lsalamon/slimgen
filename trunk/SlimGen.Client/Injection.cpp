@@ -28,6 +28,7 @@ struct ScopedHandle
 	ScopedHandle(HANDLE handle) : handle(handle) { }
 	~ScopedHandle() { if (handle != INVALID_HANDLE_VALUE && handle != NULL) CloseHandle(handle); }
 
+	void reset() { if(handle != INVALID_HANDLE_VALUE) CloseHandle(handle); }
 	HANDLE release() { HANDLE tmp = handle; handle = INVALID_HANDLE_VALUE; return tmp; }
 	operator HANDLE&() { return handle; }
 
@@ -76,6 +77,13 @@ public:
 			UnmapViewOfFile(basePointer);
 	}
 
+	void Unmap() { 
+		ScopedHandle handle(fileMapping);
+		fileMapping = INVALID_HANDLE_VALUE;
+		if(basePointer)
+			UnmapViewOfFile(basePointer);
+		basePointer = 0;
+	}
 	char *BasePointer() { return reinterpret_cast<char*>(basePointer); }
 	operator void*() { return basePointer; }
 
@@ -142,6 +150,8 @@ int InjectNativeCode(const std::wstring &imagePath, const std::vector<MethodDesc
 			ReadFile(replacementFile, fileView.BasePointer() + fileOffset, size, &size, 0);
 		}
 
+		fileView.Unmap();
+		fileHandle.reset();
 		if (!CopyFile(fileCleanup, imagePath.c_str(), false))
 			throw std::runtime_error("Unable to copy temporary image back to image.");
 	} catch(std::runtime_error& error) {
