@@ -36,13 +36,16 @@ struct ScopedHandle
 
 struct TempFile
 {
-	TempFile() {
+	TempFile(std::wstring const& imagePath) {
 		wchar_t tempPath[MAX_PATH];
 		if (!GetTempPath(MAX_PATH, tempPath))
 			return;
 
 		wchar_t tempName[MAX_PATH];
 		if (!GetTempFileName(tempPath, L"SGC", 0, tempName))
+			return;
+
+		if (!CopyFile(imagePath.c_str(), tempName, true))
 			return;
 
 		fileName = tempName;
@@ -86,12 +89,9 @@ int InjectNativeCode(const std::wstring &imagePath, const std::vector<MethodDesc
 	assert(sizeof(short) == 2);
 	assert(sizeof(int) == 4);
 
-	TempFile fileCleanup;
+	TempFile fileCleanup(imagePath);
 	if(!fileCleanup)
 		return 2;
-
-	if (!CopyFile(imagePath.c_str(), fileCleanup, true))
-		return 3;
 
 	ScopedHandle fileHandle = CreateFile(imagePath.c_str(), GENERIC_READ | GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 	if (fileHandle == NULL || fileHandle == INVALID_HANDLE_VALUE)
