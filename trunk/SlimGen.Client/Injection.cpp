@@ -39,20 +39,20 @@ struct TempFile
 	TempFile(std::wstring const& imagePath) {
 		wchar_t tempPath[MAX_PATH];
 		if (!GetTempPath(MAX_PATH, tempPath))
-			return;
+			throw std::runtime_error("Unable to get temporary file path.");
 
 		wchar_t tempName[MAX_PATH];
 		if (!GetTempFileName(tempPath, L"SGC", 0, tempName))
-			return;
+			throw std::runtime_error("Unable to get temporary file name.");
 
 		if (!CopyFile(imagePath.c_str(), tempName, true))
-			return;
+			throw std::runtime_error("Unable to copy image file to temporary file.");
 
 		fileName = tempName;
 	}
 
-	operator wchar_t const*() const { if(fileName.empty()) return 0; return fileName.c_str(); }
-	~TempFile() { if (fileName.empty()) DeleteFile(fileName.c_str()); }
+	operator wchar_t const*() const { return fileName.c_str(); }
+	~TempFile() { if (!fileName.empty()) DeleteFile(fileName.c_str()); }
 
 	std::wstring fileName;
 };
@@ -64,7 +64,7 @@ public:
 	{
 		fileMapping = CreateFileMapping(fileHandle, NULL, PAGE_READWRITE, 0, 0, NULL);
 		if (fileMapping == NULL || fileMapping == INVALID_HANDLE_VALUE)
-			return;
+			throw std::runtime_error("Unable to create file mapping.");
 
 		basePointer = MapViewOfFile(fileMapping, FILE_MAP_ALL_ACCESS, 0, 0, 0);
 	}
@@ -89,64 +89,64 @@ int InjectNativeCode(const std::wstring &imagePath, const std::vector<MethodDesc
 	assert(sizeof(short) == 2);
 	assert(sizeof(int) == 4);
 
-	TempFile fileCleanup(imagePath);
-	if(!fileCleanup)
-		return 2;
+	try {
+		TempFile fileCleanup(imagePath);
 
-	ScopedHandle fileHandle = CreateFile(imagePath.c_str(), GENERIC_READ | GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-	if (fileHandle == NULL || fileHandle == INVALID_HANDLE_VALUE)
-		return 4;
+		ScopedHandle fileHandle = CreateFile(fileCleanup, GENERIC_READ | GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+		if (fileHandle == NULL || fileHandle == INVALID_HANDLE_VALUE)
+			throw std::runtime_error("Unable to open temporary image file");
 
-	FileMappingView fileView(fileHandle);
-	if (!fileView)
-		return 5;
+		FileMappingView fileView(fileHandle);
 
-	char *image = fileView.BasePointer();
-	int offset = *reinterpret_cast<int*>(image + 0x3c);
-	char *header = image + offset;
-	if (header[0] != 'P' || header[1] != 'E' || header[2] != 0 || header[3] != 0)
-		return 6;
+		char *image = fileView.BasePointer();
+		int offset = *reinterpret_cast<int*>(image + 0x3c);
+		char *header = image + offset;
+		if (header[0] != 'P' || header[1] != 'E' || header[2] != 0 || header[3] != 0)
+			throw std::runtime_error("Invalid PE file header.");
 
-	short sectionCount = *reinterpret_cast<short*>(header + 6);
-	if (sectionCount <= 0 || sectionCount > 96)
-		return 7;
+		short sectionCount = *reinterpret_cast<short*>(header + 6);
+		if (sectionCount <= 0 || sectionCount > 96)
+			throw std::runtime_error("Invalid section count.");
 
-	short sizeOfOptionalHeader = *reinterpret_cast<short*>(header + 18);
-	image += offset + 24 + sizeOfOptionalHeader;
+		short sizeOfOptionalHeader = *reinterpret_cast<short*>(header + 18);
+		image += offset + 24 + sizeOfOptionalHeader;
 
-	std::vector<IMAGE_SECTION_HEADER> sections(sectionCount);
-	for (int i = 0; i < sectionCount; i++)
-	{
-		sections.push_back(*reinterpret_cast<IMAGE_SECTION_HEADER*>(image));
-		image += IMAGE_SIZEOF_SECTION_HEADER;
-	}
-
-	for (std::vector<MethodDescriptor>::const_iterator method = methods.begin(); method != methods.end(); method++)
-	{
-		std::vector<IMAGE_SECTION_HEADER>::const_iterator first = sections.begin();
-		for ( ; first != sections.end(); first++)
+		std::vector<IMAGE_SECTION_HEADER> sections(sectionCount);
+		for (int i = 0; i < sectionCount; i++)
 		{
-			if (method->BaseAddress > first->VirtualAddress && method->BaseAddress <= first->VirtualAddress + first->Misc.VirtualSize)
-				break;
+			sections.push_back(*reinterpret_cast<IMAGE_SECTION_HEADER*>(image));
+			image += IMAGE_SIZEOF_SECTION_HEADER;
 		}
 
-		if (first == sections.end())
-			continue;
+		for (std::vector<MethodDescriptor>::const_iterator method = methods.begin(); method != methods.end(); method++)
+		{
+			std::vector<IMAGE_SECTION_HEADER>::const_iterator first = sections.begin();
+			for ( ; first != sections.end(); first++)
+			{
+				if (method->BaseAddress > first->VirtualAddress && method->BaseAddress <= first->VirtualAddress + first->Misc.VirtualSize)
+					break;
+			}
 
-		ScopedHandle replacementFile = CreateFile(method->ReplacementFile.c_str(), GENERIC_READ, 0, 0, OPEN_EXISTING, 0, 0);
-		if(replacementFile == INVALID_HANDLE_VALUE || replacementFile == NULL)
-			continue;
+			if (first == sections.end())
+				continue;
 
-		DWORD size = GetFileSize(replacementFile, 0);
-		if(size > method->Length)
-			continue;
+			ScopedHandle replacementFile = CreateFile(method->ReplacementFile.c_str(), GENERIC_READ, 0, 0, OPEN_EXISTING, 0, 0);
+			if(replacementFile == INVALID_HANDLE_VALUE || replacementFile == NULL)
+				continue;
 
-		long fileOffset = method->BaseAddress - first->VirtualAddress + first->PointerToRawData;
-		ReadFile(replacementFile, fileView.BasePointer() + fileOffset, size, &size, 0);
+			DWORD size = GetFileSize(replacementFile, 0);
+			if(size > method->Length)
+				continue;
+
+			long fileOffset = method->BaseAddress - first->VirtualAddress + first->PointerToRawData;
+			ReadFile(replacementFile, fileView.BasePointer() + fileOffset, size, &size, 0);
+		}
+
+		if (!CopyFile(fileCleanup, imagePath.c_str(), false))
+			throw std::runtime_error("Unable to copy temporary image back to image.");
+	} catch(std::runtime_error& error) {
+		return -1;
 	}
-
-	if (!CopyFile(fileCleanup, imagePath.c_str(), false))
-		return 8;
 
 	return 0;
 }
