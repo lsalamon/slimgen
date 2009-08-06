@@ -5,7 +5,7 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProductVersion>9.0.30729</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>548f7068-4593-48ab-b662-a3e5e4aad4bf</ProjectGuid>
+    <ProjectGuid>{AD37FAD4-B2A5-454E-8172-A47ADEAF1AD7}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>SlimGen.Compiler</RootNamespace>
