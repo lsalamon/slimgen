@@ -18,6 +18,7 @@ namespace SlimGen.Compiler {
 
 	struct MethodHeader {
 		public string MethodName;
+		public int MethodToken;
 		public List<ChunkInfo> Chunks;
 	}
 
@@ -49,7 +50,7 @@ namespace SlimGen.Compiler {
 				var currentPlatform = new PlatformHeader() { Platform = platform.Type, Methods = new List<MethodHeader>()};
 				binFiles.Add(currentPlatform);
 				foreach (var method in platform.Methods) {
-					var currentMethod = new MethodHeader() { MethodName = method.Name, Chunks = new List<ChunkInfo>() };
+					var currentMethod = new MethodHeader() { MethodName = method.Name, Chunks = new List<ChunkInfo>(), MethodToken = method.TokenId };
 					currentPlatform.Methods.Add(currentMethod);
 					foreach (var instructionSet in method.InstructionSets) {
 						if (instructionSet.ChunkCount != instructionSet.CodeChunks.Length) {
@@ -85,9 +86,10 @@ namespace SlimGen.Compiler {
 								len += (int)fi.Length + 4 + 4;
 							}
 
-							pw.Write(len + 4 + method.MethodName.Length + 4); //MethodHeader [ LEN, NameLen, Name, ChunkInfo[] ]
+							pw.Write(len + 4 + method.MethodName.Length + 4 + 4); //MethodHeader [ LEN, NameLen, Name, TokenID, ChunkInfo[] ]
 							pw.Write(method.MethodName.Length);
 							pw.Write(method.MethodName.ToCharArray());
+							pw.Write(method.MethodToken);
 
 							foreach(var chunk in method.Chunks) {
 								var fi = new FileInfo(chunk.ChunkFileName);
