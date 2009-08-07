@@ -22,19 +22,6 @@
 
 #include "Injection.h"
 
-struct ScopedHandle
-{
-	ScopedHandle() : handle(INVALID_HANDLE_VALUE) { }
-	ScopedHandle(HANDLE handle) : handle(handle) { }
-	~ScopedHandle() { if (handle != INVALID_HANDLE_VALUE && handle != NULL) CloseHandle(handle); }
-
-	void reset() { if(handle != INVALID_HANDLE_VALUE) CloseHandle(handle); }
-	HANDLE release() { HANDLE tmp = handle; handle = INVALID_HANDLE_VALUE; return tmp; }
-	operator HANDLE&() { return handle; }
-
-	HANDLE handle;
-};
-
 struct TempFile
 {
 	TempFile(std::wstring const& imagePath) {
