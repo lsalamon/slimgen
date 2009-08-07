@@ -27,6 +27,7 @@
 namespace SlimGen {
 	struct MethodNativeBlocks {
 		CORDB_ADDRESS BaseAddress;
+		mdMethodDef MethodToken;
 		std::wstring MethodName;
 		std::vector<CodeChunkInfo> CodeChunks;
 	};

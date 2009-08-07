@@ -60,6 +60,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="corguids.lib Psapi.lib mscoree.lib"
 				OutputFile="$(OutDir)\x86\$(ProjectName).exe"
 				LinkIncremental="2"
 				GenerateDebugInformation="true"
@@ -165,6 +166,10 @@
 		</Configuration>
 	</Configurations>
 	<References>
+		<ProjectReference
+			ReferencedProjectIdentifier="{365E7052-4C5A-4CDA-B01C-6098201E13FC}"
+			RelativePathToProject=".\DebuggerLib\DebuggerLib.vcproj"
+		/>
 	</References>
 	<Files>
 		<Filter
@@ -180,6 +185,10 @@
 				RelativePath=".\main.cpp"
 				>
 			</File>
+			<File
+				RelativePath=".\SgenFile.cpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -188,6 +197,10 @@
 			>
 			<File
 				RelativePath=".\Injection.h"
+				>
+			</File>
+			<File
+				RelativePath=".\SgenFile.h"
 				>
 			</File>
 		</Filter>
