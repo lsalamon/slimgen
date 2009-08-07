@@ -1,0 +1,29 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<slimgen.build xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+	<platform type="X86">
+		<method name="SlimDX.Matrix.Multiply" token="6291457">
+			<instructionSet type="SSE41" chunkCount="1">
+				<codeChunk filename="SlimDX.Matrix.Multiply.SSE41.Asm" />
+			</instructionSet>
+			<instructionSet type="SSE3" chunkCount="1">
+				<codeChunk filename="SlimDX.Matrix.Multiply.SSE3.Asm" />
+			</instructionSet>
+			<instructionSet type="SSE2" chunkCount="1">
+				<codeChunk filename="SlimDX.Matrix.Multiply.SSE2.Asm" />
+			</instructionSet>
+			<instructionSet type="SSE42" chunkCount="1">
+				<codeChunk filename="SlimDX.Matrix.Multiply.SSE42.Asm" />
+			</instructionSet>
+		</method>
+		<method name="SlimDX.Matrix.Add" token="6291458">
+			<instructionSet type="SSE2" chunkCount="1">
+				<codeChunk filename="SlimDX.Matrix.Add.SSE2.Asm" />
+			</instructionSet>
+		</method>
+		<method name="SlimDX.Matrix.Subtract" token="6291459">
+			<instructionSet type="SSE2" chunkCount="1">
+				<codeChunk filename="SlimDX.Matrix.Subtract.SSE2.Asm" />
+			</instructionSet>
+		</method>
+	</platform>
+</slimgen.build>
