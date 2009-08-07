@@ -178,7 +178,7 @@ namespace SlimGen {
 			std::vector<CodeChunkInfo> codeChunks(numberOfCodeChunks);
 			nativeCode2->GetCodeChunks(numberOfCodeChunks, &numberOfCodeChunks, &codeChunks[0]);
 
-			MethodNativeBlocks block = {0, typeName + L"." + methodName, codeChunks};
+			MethodNativeBlocks block = {0, methodDef, methodName, codeChunks};
 			module->GetBaseAddress(&block.BaseAddress);
 
 			methodBlocks.push_back(block);

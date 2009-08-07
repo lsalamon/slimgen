@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<slimgen.build xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+<slimgen.build>
 	<platform type="X86">
 		<method name="SlimDX.Matrix.Multiply" token="6291457">
 			<instructionSet type="SSE41" chunkCount="1">
