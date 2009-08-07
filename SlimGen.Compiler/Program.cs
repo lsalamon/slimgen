@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Xml.Serialization;
 
 namespace SlimGen.Compiler {
@@ -47,7 +48,7 @@ namespace SlimGen.Compiler {
 			var binFiles = new List<PlatformHeader>();
 
 			foreach (var platform in buildProject.Platforms) {
-				var currentPlatform = new PlatformHeader() { Platform = platform.Type, Methods = new List<MethodHeader>()};
+				var currentPlatform = new PlatformHeader() { Platform = platform.Type, Methods = new List<MethodHeader>() };
 				binFiles.Add(currentPlatform);
 				foreach (var method in platform.Methods) {
 					var currentMethod = new MethodHeader() { MethodName = method.Name, Chunks = new List<ChunkInfo>(), MethodToken = method.TokenId };
@@ -75,35 +76,27 @@ namespace SlimGen.Compiler {
 
 			using (var outFile = File.Open(args[1], FileMode.Create, FileAccess.Write)) {
 				var writer = new BinaryWriter(outFile);
-				writer.Write("SGEN".ToCharArray()); //FileHeader [ SGEN, PlatformHeader[] ]
+				writer.Write("SGEN".ToCharArray());
+				writer.Write(binFiles.Count);
 				foreach (var platform in binFiles) {
-					var ms = new MemoryStream();
-					using (var pw = new BinaryWriter(ms)) {
-						foreach (var method in platform.Methods) {
-							var len = 0;
-							foreach (var chunk in method.Chunks) {
-								var fi = new FileInfo(chunk.ChunkFileName);
-								len += (int)fi.Length + 4 + 4;
-							}
+					writer.Write(platform.Methods.Count);
+					writer.Write((int)platform.Platform);
 
-							pw.Write(len + 4 + method.MethodName.Length + 4 + 4); //MethodHeader [ LEN, NameLen, Name, TokenID, ChunkInfo[] ]
-							pw.Write(method.MethodName.Length);
-							pw.Write(method.MethodName.ToCharArray());
-							pw.Write(method.MethodToken);
+					foreach (var method in platform.Methods) {
+						writer.Write(method.Chunks.Count);
+						var methodNameBytes = Encoding.Unicode.GetBytes(method.MethodName);
+						writer.Write(methodNameBytes.Length);
+						writer.Write(methodNameBytes);
+						writer.Write(method.MethodToken);
 
-							foreach(var chunk in method.Chunks) {
-								var fi = new FileInfo(chunk.ChunkFileName);
-								pw.Write((int)fi.Length + 4 + 4); //ChunkInfo [ LEN, InstructionSet, byte[] ]
-								pw.Write((int)chunk.InstructionSet);
-								using(var fis = new BinaryReader(fi.OpenRead())) {
-									pw.Write(fis.ReadBytes((int)fi.Length));
-								}
+						foreach (var chunk in method.Chunks) {
+							var fi = new FileInfo(chunk.ChunkFileName);
+							writer.Write((int)fi.Length); //ChunkInfo [ LEN, InstructionSet, byte[] ]
+							writer.Write((int)chunk.InstructionSet);
+							using (var fis = new BinaryReader(fi.OpenRead())) {
+								writer.Write(fis.ReadBytes((int)fi.Length));
 							}
 						}
-
-						writer.Write((int)ms.Length + 4 + 4); //PlatformHeader [LEN, Platform, MethodHeader[] ]
-						writer.Write((int)platform.Platform);
-						writer.Write(ms.ToArray());
 					}
 				}
 			}
