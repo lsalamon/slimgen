@@ -34,21 +34,53 @@
 #include "SgenFile.h"
 #include "..\DebuggerLib\Debugger.h"
 
-int wmain(int argc, wchar_t** argv) {
+int wmain(int argc, wchar_t** argv)
+{
 	if(argc != 3) {
 		std::cout<<"Usage: SlimGen.Client <Assembly> <Sgen Package>";
 		return 0;
 	}
 
 	std::pair<std::wstring, std::vector<SlimGen::MethodNativeBlocks>> info;
-	try {
+	try
+	{
 		info = SlimGen::GetNativeImageInformation(argv[1]);
-	} catch(std::runtime_error& error) {
+	} 
+	catch(std::runtime_error& error)
+	{
 		std::cout<<"Unhandled exception encountered: "<<error.what()<<std::endl;
 		return -1;
 	}
 
-	for each(SlimGen::MethodNativeBlocks const& block in info.second) {
+	SgenFile sgenFile;
+	LoadSgen(argv[2], sgenFile);
 
+	std::vector<SgenMethod> methods;
+	GetMethodsForPlatformInstructionSet(PlatformSpecifier::X64, InstructionSetSpecifier::Default, sgenFile, methods);
+
+	std::vector<MethodDescriptor> descriptors;
+	for each(const SgenMethod &method in methods)
+	{
+		std::vector<SlimGen::MethodNativeBlocks>::const_iterator block = info.second.begin();
+		for(; block != info.second.end(); ++block)
+		{
+			if(block->MethodToken == method.MethodToken)
+				break;
+		}
+
+		if(block == info.second.end())
+			throw std::runtime_error("fuck off");
+
+		for (int i = 0; i < block->CodeChunks.size(); i++)
+		{
+			MethodDescriptor descriptor;
+			descriptor.BaseAddress = block->CodeChunks.at(i).startAddr;
+			descriptor.Length = method.Chunks.at(i).Length;
+			descriptor.Data = &method.Chunks.at(i).Data[0];
+
+			descriptors.push_back(descriptor);
+		}
 	}
+
+	InjectNativeCode(info.first, descriptors);
 }

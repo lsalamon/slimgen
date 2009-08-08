@@ -43,7 +43,7 @@ struct MethodDescriptor
 {
 	DWORD BaseAddress;
 	DWORD Length;
-	std::wstring ReplacementFile;
+	const BYTE *Data;
 };
 
 int InjectNativeCode(const std::wstring &imagePath, const std::vector<MethodDescriptor> &methods);
