@@ -125,16 +125,8 @@ int InjectNativeCode(const std::wstring &imagePath, const std::vector<MethodDesc
 			if (first == sections.end())
 				continue;
 
-			ScopedHandle replacementFile = CreateFile(method->ReplacementFile.c_str(), GENERIC_READ, 0, 0, OPEN_EXISTING, 0, 0);
-			if(replacementFile == INVALID_HANDLE_VALUE || replacementFile == NULL)
-				continue;
-
-			DWORD size = GetFileSize(replacementFile, 0);
-			if(size > method->Length)
-				continue;
-
 			long fileOffset = method->BaseAddress - first->VirtualAddress + first->PointerToRawData;
-			ReadFile(replacementFile, fileView.BasePointer() + fileOffset, size, &size, 0);
+			memcpy(fileView.BasePointer() + fileOffset, method->Data, method->Length);
 		}
 
 		fileView.Unmap();
