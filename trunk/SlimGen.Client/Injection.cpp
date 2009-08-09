@@ -23,8 +23,7 @@
 #include "Injection.h"
 #include <iostream>
 
-struct TempFile
-{
+struct TempFile {
 	TempFile(std::wstring const& imagePath) {
 		wchar_t tempPath[MAX_PATH];
 		if (!GetTempPath(MAX_PATH, tempPath))
@@ -46,11 +45,9 @@ struct TempFile
 	std::wstring fileName;
 };
 
-class FileMappingView
-{
+class FileMappingView {
 public:
-	FileMappingView(HANDLE fileHandle)
-	{
+	FileMappingView(HANDLE fileHandle) {
 		fileMapping = CreateFileMapping(fileHandle, NULL, PAGE_READWRITE, 0, 0, NULL);
 		if (fileMapping == NULL || fileMapping == INVALID_HANDLE_VALUE)
 			throw std::runtime_error("Unable to create file mapping.");
@@ -58,8 +55,7 @@ public:
 		basePointer = MapViewOfFile(fileMapping, FILE_MAP_ALL_ACCESS, 0, 0, 0);
 	}
 
-	~FileMappingView()
-	{
+	~FileMappingView() {
 		ScopedHandle handle(fileMapping);
 		if (basePointer != NULL)
 			UnmapViewOfFile(basePointer);
@@ -80,6 +76,30 @@ private:
 	HANDLE fileMapping;
 };
 
+IMAGE_SECTION_HEADER* GetPESectionHeaders( char * image, int* headerCount ) {
+	IMAGE_DOS_HEADER* dosHeader = reinterpret_cast<IMAGE_DOS_HEADER*>(image);
+	if(dosHeader->e_magic != IMAGE_DOS_SIGNATURE)
+		throw std::runtime_error("Invalid PE file header.");
+
+	IMAGE_NT_HEADERS* ntHeader = reinterpret_cast<IMAGE_NT_HEADERS*>(image + dosHeader->e_lfanew);
+	if(ntHeader->Signature != IMAGE_NT_SIGNATURE)
+		throw std::runtime_error("Invalid PE file header.");
+
+	*headerCount = ntHeader->FileHeader.NumberOfSections;
+
+	return reinterpret_cast<IMAGE_SECTION_HEADER*>(reinterpret_cast<char*>(&ntHeader->OptionalHeader) + ntHeader->FileHeader.SizeOfOptionalHeader);
+}
+
+IMAGE_SECTION_HEADER* GetSectionFromRVA(DWORD rva, int headerCount, IMAGE_SECTION_HEADER* sectionHeaders) {
+	IMAGE_SECTION_HEADER* section;
+	for (int i = 0; i < headerCount; ++i) {
+		if (rva > sectionHeaders[i].VirtualAddress && rva <= sectionHeaders[i].VirtualAddress + sectionHeaders[i].Misc.VirtualSize) {
+			section = sectionHeaders + i;
+			break;
+		}
+	}	return section;
+}
+
 int InjectNativeCode(const std::wstring &imagePath, const std::vector<MethodDescriptor> &methods)
 {
 	assert(sizeof(short) == 2);
@@ -95,27 +115,13 @@ int InjectNativeCode(const std::wstring &imagePath, const std::vector<MethodDesc
 		FileMappingView fileView(fileHandle);
 
 		char *image = fileView.BasePointer();
-		IMAGE_DOS_HEADER* dosHeader = reinterpret_cast<IMAGE_DOS_HEADER*>(image);
-		if(dosHeader->e_magic != IMAGE_DOS_SIGNATURE)
-			throw std::runtime_error("Invalid PE file header.");
 
-		IMAGE_NT_HEADERS* ntHeader = reinterpret_cast<IMAGE_NT_HEADERS*>(image + dosHeader->e_lfanew);
-		if(ntHeader->Signature != IMAGE_NT_SIGNATURE)
-			throw std::runtime_error("Invalid PE file header.");
+		int headerCount;
+		IMAGE_SECTION_HEADER* sectionHeaders = GetPESectionHeaders(image, &headerCount);
 
-		IMAGE_SECTION_HEADER* sectionHeaders = reinterpret_cast<IMAGE_SECTION_HEADER*>(reinterpret_cast<char*>(&ntHeader->OptionalHeader) + ntHeader->FileHeader.SizeOfOptionalHeader);
-
-		for each(MethodDescriptor const& method in methods)
-		{
+		for each(MethodDescriptor const& method in methods) {
 			IMAGE_SECTION_HEADER* section;
-			for (int i = 0; i < ntHeader->FileHeader.NumberOfSections; ++i)
-			{
-				
-				if (method.BaseAddress > sectionHeaders[i].VirtualAddress && method.BaseAddress <= sectionHeaders[i].VirtualAddress + sectionHeaders[i].Misc.VirtualSize) {
-					section = sectionHeaders + i;
-					break;
-				}
-			}
+			section = GetSectionFromRVA(method.BaseAddress, headerCount, sectionHeaders);
 
 			if (section == 0)
 				continue;
