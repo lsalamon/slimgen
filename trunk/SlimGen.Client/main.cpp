@@ -64,7 +64,7 @@ int wmain(int argc, wchar_t** argv)
 		std::vector<SlimGen::MethodNativeBlocks>::const_iterator block = info.second.begin();
 		for(; block != info.second.end(); ++block)
 		{
-			if(block->MethodToken == method.MethodToken)
+			if(block->Signature == method.MethodSignature)
 				break;
 		}
 
@@ -74,7 +74,7 @@ int wmain(int argc, wchar_t** argv)
 		for (int i = 0; i < block->CodeChunks.size(); i++)
 		{
 			MethodDescriptor descriptor;
-			descriptor.BaseAddress = block->CodeChunks.at(i).startAddr - block->BaseAddress;
+			descriptor.BaseAddress = block->CodeChunks.at(i).startAddr;
 			descriptor.Length = method.Chunks.at(i).Length;
 			descriptor.Data = &method.Chunks.at(i).Data[0];
 

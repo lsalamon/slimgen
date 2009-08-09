@@ -32,7 +32,7 @@
 #include <mscoree.h>
 
 #include "Debugger.h"
-
+#include "SigFormat.h"
 
 std::wstring const MethodReplacementAttribute = L"SlimGen.Generator.ReplaceMethodNativeAttribute";
 
@@ -160,7 +160,8 @@ namespace SlimGen {
 			CComPtr<ICorDebugFunction> function;
 			module->GetFunctionFromToken(methodDef, &function);
 
-			std::wstring methodName = GetMethodNameFromDef(metadata, methodDef);
+			std::wstring signature;
+			std::wstring methodName = GetMethodNameFromDef(metadata, methodDef, signature);
 			CComPtr<ICorDebugCode> nativeCode;
 			function->GetNativeCode(&nativeCode);
 
@@ -175,23 +176,20 @@ namespace SlimGen {
 			CComPtr<ICorDebugCode2> nativeCode2;
 			nativeCode->QueryInterface(IID_ICorDebugCode2, reinterpret_cast<void**>(&nativeCode2));
 
+			CORDB_ADDRESS baseAddress;
+			module->GetBaseAddress(&baseAddress);
+
 			ULONG32 numberOfCodeChunks;
 			nativeCode2->GetCodeChunks(0, &numberOfCodeChunks, 0);
 			std::vector<CodeChunkInfo> codeChunks(numberOfCodeChunks);
 			nativeCode2->GetCodeChunks(numberOfCodeChunks, &numberOfCodeChunks, &codeChunks[0]);
 
-			BYTE* data = new BYTE[codeChunks[0].length];
-			CComPtr<ICorDebugProcess> process;
-			module->GetProcess(&process);
-			SIZE_T read;
+			for(std::size_t i = 0; i < codeChunks.size(); ++i) {
+				codeChunks[i].startAddr -= baseAddress;
+			}
+
+			MethodNativeBlocks block = {signature, typeName + L"." + methodName, codeChunks};
 			
-			MethodNativeBlocks block = {0, methodDef, typeName + L"." + methodName, codeChunks};
-			module->GetBaseAddress(&block.BaseAddress);
-
-			CORDB_ADDRESS addr = codeChunks[0].startAddr - block.BaseAddress;
-			process->ReadMemory(block.BaseAddress + addr, codeChunks[0].length, data, &read);
-			delete[] data;
-
 			methodBlocks.push_back(block);
 		} while(methodCount > 0);
 		metadata->CloseEnum(methodEnum);
@@ -214,7 +212,7 @@ namespace SlimGen {
 		return typeName;
 	}
 
-	std::wstring Debugger::GetMethodNameFromDef( CComPtr<IMetaDataImport2> metadata, mdMethodDef methodDef )
+	std::wstring Debugger::GetMethodNameFromDef( CComPtr<IMetaDataImport2> metadata, mdMethodDef methodDef, std::wstring& signatureStr )
 	{
 		mdTypeDef outMethodType;
 		wchar_t methodName[256];
@@ -225,6 +223,10 @@ namespace SlimGen {
 		ULONG codeRVA;
 		DWORD implFlags;
 		metadata->GetMethodProps(methodDef, &outMethodType,methodName, 256, &methodNameLength, &attributes, &signature, &signatureLength, &codeRVA, &implFlags);
+		wchar_t sigStr[2048];
+		SigFormat formatter(sigStr, 2048, methodDef, metadata, metadata);
+		formatter.Parse(static_cast<sig_byte const*>(signature), signatureLength);
+		signatureStr = sigStr;
 		return methodName;
 	}
 
@@ -236,15 +238,6 @@ namespace SlimGen {
 		return dataLen > 0;
 	}
 
-	/*
-	This is a particularly brittle method, it is designed to take in the following types of inputs and return the results indicated:
-	"SlimDX, Culture=en, PublicKeyToken=a5d015c7d5a0b012, Version=1.0.0.0"
-	returns "slimdx"
-	"C:\Projects\SlimDX\Build\x86\release\SlimDX.dll"
-	returns "slimdx"
-	"C:/Projects/SlimDX/Build/x86/release/SlimDX.dll"
-	returns "slimdx"
-	*/
 	std::wstring GetSimpleAssemblyName(std::wstring assemblyName) {
 		std::wstring result;
 		if(assemblyName.find(L",") != assemblyName.npos) {

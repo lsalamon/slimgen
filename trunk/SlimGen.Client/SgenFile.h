@@ -52,8 +52,9 @@ struct SgenChunkInfo {
 struct SgenMethod {
 	DWORD ChunkCount;
 	DWORD MethodNameLength;
+	DWORD MethodSignatureLength;
 	std::wstring MethodName; //MethodNameLength in size
-	DWORD MethodToken;
+	std::wstring MethodSignature;
 	std::vector<SgenChunkInfo> Chunks;
 };
 

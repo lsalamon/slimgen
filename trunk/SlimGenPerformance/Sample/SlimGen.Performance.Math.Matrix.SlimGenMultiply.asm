@@ -3,7 +3,7 @@
 ; SlimGen.Performance.Math.Matrix.SlimGenMultiply
 ; RVA: 0x59f0
 ; Length: 566
-; Calling convention is __fastcall:
+; Calling convention is clr __fastcall:
 ;  X86: First two arguments in registers ECX and EDX the remainder are on the
 ;       stack right to left.
 ;-------------------------------------------------------------------------------
@@ -95,3 +95,11 @@ start:		mov 	eax, [esp + 4]
 ; Buffer out to the size of the original method: 
 ; WARNING: DO NOT EXCEED THIS SIZE
             TIMES 0x236-($-$$) DB 0xCC
+;===============================================================================
+; WARNING: DO NOT REMOVE {
+;===============================================================================
+%define methodName  "SlimGen.Performance.Math.Matrix.SlimGenMultiply"
+%define methodSignature "(ref SlimGen.Performance.Math.Matrix, ref SlimGen.Performance.Math.Matrix, ref SlimGen.Performance.Math.Matrix)"
+;===============================================================================
+; WARNING: DO NOT REMOVE }
+;===============================================================================

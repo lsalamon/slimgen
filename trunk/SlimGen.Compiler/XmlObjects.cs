@@ -61,7 +61,7 @@ namespace SlimGen.Compiler {
 		[XmlAttribute("name")]
 		public string Name;
 		[XmlAttribute("token")]
-		public int TokenId;
+		public string Signature;
 		[XmlElement("instructionSet")]
 		public InstructionSet[] InstructionSets;
 	}
