@@ -42,7 +42,7 @@ namespace InstructionSetSpecifier {
 	};
 }
 
-static const int SGENFileSignature = 0x4E45753;
+static const int SGENFileSignature = 0x4E454753;
 struct SgenChunkInfo {
 	DWORD Length;
 	InstructionSetSpecifier::Specifier InstructionSet;

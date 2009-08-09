@@ -56,7 +56,7 @@ int wmain(int argc, wchar_t** argv)
 	LoadSgen(argv[2], sgenFile);
 
 	std::vector<SgenMethod> methods;
-	GetMethodsForPlatformInstructionSet(PlatformSpecifier::X64, InstructionSetSpecifier::Default, sgenFile, methods);
+	GetMethodsForPlatformInstructionSet(PlatformSpecifier::X86, InstructionSetSpecifier::SSE2, sgenFile, methods);
 
 	std::vector<MethodDescriptor> descriptors;
 	for each(const SgenMethod &method in methods)
@@ -74,7 +74,7 @@ int wmain(int argc, wchar_t** argv)
 		for (int i = 0; i < block->CodeChunks.size(); i++)
 		{
 			MethodDescriptor descriptor;
-			descriptor.BaseAddress = block->CodeChunks.at(i).startAddr;
+			descriptor.BaseAddress = block->CodeChunks.at(i).startAddr - block->BaseAddress;
 			descriptor.Length = method.Chunks.at(i).Length;
 			descriptor.Data = &method.Chunks.at(i).Data[0];
 
