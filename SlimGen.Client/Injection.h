@@ -32,7 +32,7 @@ struct ScopedHandle
 	ScopedHandle(HANDLE handle) : handle(handle) { }
 	~ScopedHandle() { if (handle != INVALID_HANDLE_VALUE && handle != NULL) CloseHandle(handle); }
 
-	void reset() { if(handle != INVALID_HANDLE_VALUE) CloseHandle(handle); }
+	void reset() { if(handle != INVALID_HANDLE_VALUE) CloseHandle(handle); handle = INVALID_HANDLE_VALUE; }
 	HANDLE release() { HANDLE tmp = handle; handle = INVALID_HANDLE_VALUE; return tmp; }
 	operator HANDLE&() { return handle; }
 

@@ -35,7 +35,7 @@
 #include <fstream>
 #include <sstream>
 
-void GenerateTemplateAsm(std::wstring methodName, CORDB_ADDRESS rva, std::size_t length) {
+void GenerateTemplateAsm(std::wstring const& methodName, std::wstring const& methodSignature, CORDB_ADDRESS rva, std::size_t length) {
 	std::wofstream fout((methodName + L".asm").c_str());
 	fout<<L";-------------------------------------------------------------------------------"<<std::endl
 		<<L"; nasm -fbin -o"<<methodName
@@ -48,7 +48,7 @@ void GenerateTemplateAsm(std::wstring methodName, CORDB_ADDRESS rva, std::size_t
 		<<L"; "<<methodName<<std::endl
 		<<L"; RVA: 0x"<<std::hex<<rva<<std::endl
 		<<L"; Length: "<<std::dec<<length<<std::endl
-		<<L"; Calling convention is __fastcall:"<<std::endl
+		<<L"; Calling convention is clr __fastcall:"<<std::endl
 #ifdef _M_X64
 		<<L";  X64: First four arguments in registers RCX, RDX, R8 and R9 the remainder are"<<std::endl
 		<<L";       on the stack."<<std::endl
@@ -64,11 +64,19 @@ void GenerateTemplateAsm(std::wstring methodName, CORDB_ADDRESS rva, std::size_t
 #endif
 		<<L"ORG         0x"<<std::hex<<rva<<std::endl
 		<<L"start:"<<std::endl
-		<<L"            ret      4"<<std::endl
+		<<L"            ret     4"<<std::endl
 		<<L";-------------------------------------------------------------------------------"<<std::endl
 		<<L"; Buffer out to the size of the original method: "<<std::endl
 		<<L"; WARNING: DO NOT EXCEED THIS SIZE"<<std::endl
-		<<L"            TIMES 0x"<<std::hex<<length<<L"-($-$$) DB 0xCC"<<std::endl;
+		<<L"            TIMES 0x"<<std::hex<<length<<L"-($-$$) DB 0xCC"<<std::endl
+		<<L";==============================================================================="<<std::endl
+		<<L"; WARNING: DO NOT REMOVE {"<<std::endl
+		<<L";==============================================================================="<<std::endl
+		<<L"%define methodName      '"<<methodName<<L"'"<<std::endl
+		<<L"%define methodSignature '"<<methodSignature<<L"'"<<std::endl
+		<<L";==============================================================================="<<std::endl
+		<<L"; WARNING: DO NOT REMOVE }"<<std::endl
+		<<L";==============================================================================="<<std::endl;
 }
 
 int wmain(int argc, wchar_t** argv) {
@@ -96,7 +104,7 @@ int wmain(int argc, wchar_t** argv) {
 			if(info.second[i].CodeChunks.size() > 1) {
 				ss<<j;
 			}
-			GenerateTemplateAsm(ss.str(), info.second[i].CodeChunks[j].startAddr - info.second[i].BaseAddress, info.second[i].CodeChunks[j].length);
+			GenerateTemplateAsm(ss.str(), info.second[i].Signature, info.second[i].CodeChunks[j].startAddr, info.second[i].CodeChunks[j].length);
 		}
 	}
 }

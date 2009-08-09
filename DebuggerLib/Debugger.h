@@ -26,8 +26,7 @@
 
 namespace SlimGen {
 	struct MethodNativeBlocks {
-		CORDB_ADDRESS BaseAddress;
-		mdMethodDef MethodToken;
+		std::wstring Signature;
 		std::wstring MethodName;
 		std::vector<CodeChunkInfo> CodeChunks;
 	};
@@ -49,7 +48,7 @@ namespace SlimGen {
 		void EnumerateTypes( CComPtr<IMetaDataImport2> metadata, CComPtr<ICorDebugModule> module );
 		void EnumerateMethods( CComPtr<IMetaDataImport2> metadata, mdTypeDef typeDef, CComPtr<ICorDebugModule> module, std::wstring const& typeName );
 		std::wstring GetTypeNameFromDef( CComPtr<IMetaDataImport2> metadata, mdTypeDef typeDef );
-		std::wstring GetMethodNameFromDef( CComPtr<IMetaDataImport2> metadata, mdMethodDef methodDef );
+		std::wstring GetMethodNameFromDef( CComPtr<IMetaDataImport2> metadata, mdMethodDef methodDef, std::wstring& signature );
 		bool HasAttribute(CComPtr<IMetaDataImport2> metadata, mdMethodDef methodDef);
 
 		std::wstring assemblySimpleName;

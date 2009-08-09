@@ -21,6 +21,7 @@
 */
 
 #include "Injection.h"
+#include <iostream>
 
 struct TempFile
 {
@@ -127,9 +128,10 @@ int InjectNativeCode(const std::wstring &imagePath, const std::vector<MethodDesc
 		fileHandle.reset();
 		if (!CopyFile(fileCleanup, imagePath.c_str(), false)) {
 			DWORD error = GetLastError();
-			throw std::runtime_error("Unable to copy temporary image back to image.");
+			throw std::runtime_error("Unable to copy temporary image back to image. Administrative rights are required to perform this action.");
 		}
 	} catch(std::runtime_error& error) {
+		std::cout<<error.what()<<std::endl;
 		return -1;
 	}
 

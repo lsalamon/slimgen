@@ -45,9 +45,11 @@ void LoadSgen(std::wstring sgenFilename, SgenFile& sgenFile) {
 			SgenMethod method;
 			ReadFile(file, &method.ChunkCount, sizeof(DWORD), &bytesRead, 0);
 			ReadFile(file, &method.MethodNameLength, sizeof(DWORD), &bytesRead, 0);
+			ReadFile(file, &method.MethodSignatureLength, sizeof(DWORD), &bytesRead, 0);
 			method.MethodName = std::wstring(method.MethodNameLength / sizeof(wchar_t), 0);
+			method.MethodSignature = std::wstring(method.MethodSignatureLength / sizeof(wchar_t), 0);
 			ReadFile(file, &method.MethodName[0], method.MethodNameLength, &bytesRead, 0);
-			ReadFile(file, &method.MethodToken, sizeof(DWORD), &bytesRead, 0);
+			ReadFile(file, &method.MethodSignature[0], method.MethodSignatureLength, &bytesRead, 0);
 
 			for(DWORD chunkIndex = 0; chunkIndex < method.ChunkCount; ++chunkIndex) {
 				SgenChunkInfo chunk;
@@ -91,7 +93,8 @@ void GetMethodsForPlatformInstructionSet(PlatformSpecifier::Specifier platform, 
 		newMethod.Chunks.push_back(*best);
 		newMethod.MethodName = method.MethodName;
 		newMethod.MethodNameLength = method.MethodNameLength;
-		newMethod.MethodToken = method.MethodToken;
+		newMethod.MethodSignatureLength = method.MethodSignatureLength;
+		newMethod.MethodSignature = method.MethodSignature;
 		methods.push_back(newMethod);
 	}
 }

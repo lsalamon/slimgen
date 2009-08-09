@@ -152,6 +152,10 @@
 				RelativePath=".\Debugger.cpp"
 				>
 			</File>
+			<File
+				RelativePath=".\SigParse.cpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -164,6 +168,14 @@
 			</File>
 			<File
 				RelativePath=".\DebuggerImpl.h"
+				>
+			</File>
+			<File
+				RelativePath=".\SigFormat.h"
+				>
+			</File>
+			<File
+				RelativePath=".\SigParse.h"
 				>
 			</File>
 		</Filter>
