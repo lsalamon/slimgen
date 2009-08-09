@@ -33,7 +33,7 @@ struct TempFile
 		if (!GetTempFileName(tempPath, L"SGC", 0, tempName))
 			throw std::runtime_error("Unable to get temporary file name.");
 
-		if (!CopyFile(imagePath.c_str(), tempName, true))
+		if (!CopyFile(imagePath.c_str(), tempName, false))
 			throw std::runtime_error("Unable to copy image file to temporary file.");
 
 		fileName = tempName;
@@ -87,52 +87,48 @@ int InjectNativeCode(const std::wstring &imagePath, const std::vector<MethodDesc
 	try {
 		TempFile fileCleanup(imagePath);
 
-		ScopedHandle fileHandle = CreateFile(fileCleanup, GENERIC_READ | GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+		ScopedHandle fileHandle = CreateFile(fileCleanup, GENERIC_ALL, 0, NULL, OPEN_EXISTING, 0, 0);
 		if (fileHandle == NULL || fileHandle == INVALID_HANDLE_VALUE)
 			throw std::runtime_error("Unable to open temporary image file");
 
 		FileMappingView fileView(fileHandle);
 
 		char *image = fileView.BasePointer();
-		int offset = *reinterpret_cast<int*>(image + 0x3c);
-		char *header = image + offset;
-		if (header[0] != 'P' || header[1] != 'E' || header[2] != 0 || header[3] != 0)
+		IMAGE_DOS_HEADER* dosHeader = reinterpret_cast<IMAGE_DOS_HEADER*>(image);
+		if(dosHeader->e_magic != IMAGE_DOS_SIGNATURE)
 			throw std::runtime_error("Invalid PE file header.");
 
-		short sectionCount = *reinterpret_cast<short*>(header + 6);
-		if (sectionCount <= 0 || sectionCount > 96)
-			throw std::runtime_error("Invalid section count.");
+		IMAGE_NT_HEADERS* ntHeader = reinterpret_cast<IMAGE_NT_HEADERS*>(image + dosHeader->e_lfanew);
+		if(ntHeader->Signature != IMAGE_NT_SIGNATURE)
+			throw std::runtime_error("Invalid PE file header.");
 
-		short sizeOfOptionalHeader = *reinterpret_cast<short*>(header + 18);
-		image += offset + 24 + sizeOfOptionalHeader;
-
-		std::vector<IMAGE_SECTION_HEADER> sections(sectionCount);
-		for (int i = 0; i < sectionCount; i++)
-		{
-			sections.push_back(*reinterpret_cast<IMAGE_SECTION_HEADER*>(image));
-			image += IMAGE_SIZEOF_SECTION_HEADER;
-		}
+		IMAGE_SECTION_HEADER* sectionHeaders = reinterpret_cast<IMAGE_SECTION_HEADER*>(reinterpret_cast<char*>(&ntHeader->OptionalHeader) + ntHeader->FileHeader.SizeOfOptionalHeader);
 
 		for (std::vector<MethodDescriptor>::const_iterator method = methods.begin(); method != methods.end(); method++)
 		{
-			std::vector<IMAGE_SECTION_HEADER>::const_iterator first = sections.begin();
-			for ( ; first != sections.end(); first++)
+			IMAGE_SECTION_HEADER* section;
+			for (int i = 0; i < ntHeader->FileHeader.NumberOfSections; ++i)
 			{
-				if (method->BaseAddress > first->VirtualAddress && method->BaseAddress <= first->VirtualAddress + first->Misc.VirtualSize)
+				
+				if (method->BaseAddress > sectionHeaders[i].VirtualAddress && method->BaseAddress <= sectionHeaders[i].VirtualAddress + sectionHeaders[i].Misc.VirtualSize) {
+					section = sectionHeaders + i;
 					break;
+				}
 			}
 
-			if (first == sections.end())
+			if (section == 0)
 				continue;
 
-			long fileOffset = method->BaseAddress - first->VirtualAddress + first->PointerToRawData;
+			long fileOffset = method->BaseAddress - (section->VirtualAddress - section->PointerToRawData);
 			memcpy(fileView.BasePointer() + fileOffset, method->Data, method->Length);
 		}
 
 		fileView.Unmap();
 		fileHandle.reset();
-		if (!CopyFile(fileCleanup, imagePath.c_str(), false))
+		if (!CopyFile(fileCleanup, imagePath.c_str(), false)) {
+			DWORD error = GetLastError();
 			throw std::runtime_error("Unable to copy temporary image back to image.");
+		}
 	} catch(std::runtime_error& error) {
 		return -1;
 	}

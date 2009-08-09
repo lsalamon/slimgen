@@ -83,6 +83,9 @@ void GetMethodsForPlatformInstructionSet(PlatformSpecifier::Specifier platform, 
 				best = &chunk;
 		}
 
+		if(!best)
+			break;
+
 		SgenMethod newMethod;
 		newMethod.ChunkCount = 1;
 		newMethod.Chunks.push_back(*best);

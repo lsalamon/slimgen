@@ -95,6 +95,8 @@ namespace SlimGen {
 
 			HRESULT STDMETHODCALLTYPE ExitProcess( 
 			ICorDebugProcess *pProcess) {
+				DEBUG_PRINT_ENTER
+				//pProcess->Detach();
 				return S_OK;
 		}
 

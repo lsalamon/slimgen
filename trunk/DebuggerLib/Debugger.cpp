@@ -92,6 +92,8 @@ namespace SlimGen {
 		EnumerateAssemblies(pAppDomain);
 
 		pAppDomain->Continue(FALSE);
+		pAppDomain->Detach();
+		process->Detach();
 		return S_OK;
 	}
 
@@ -178,8 +180,17 @@ namespace SlimGen {
 			std::vector<CodeChunkInfo> codeChunks(numberOfCodeChunks);
 			nativeCode2->GetCodeChunks(numberOfCodeChunks, &numberOfCodeChunks, &codeChunks[0]);
 
-			MethodNativeBlocks block = {0, methodDef, methodName, codeChunks};
+			BYTE* data = new BYTE[codeChunks[0].length];
+			CComPtr<ICorDebugProcess> process;
+			module->GetProcess(&process);
+			SIZE_T read;
+			
+			MethodNativeBlocks block = {0, methodDef, typeName + L"." + methodName, codeChunks};
 			module->GetBaseAddress(&block.BaseAddress);
+
+			CORDB_ADDRESS addr = codeChunks[0].startAddr - block.BaseAddress;
+			process->ReadMemory(block.BaseAddress + addr, codeChunks[0].length, data, &read);
+			delete[] data;
 
 			methodBlocks.push_back(block);
 		} while(methodCount > 0);
@@ -264,7 +275,7 @@ namespace SlimGen {
 	std::pair<std::wstring, std::vector<SlimGen::MethodNativeBlocks>> GetNativeImageInformation( wchar_t* assemblyName )
 	{
 		ComInit cominit;
-		SlimGen::Debugger debuggerCallback(GetSimpleAssemblyName(assemblyName));
+		std::auto_ptr<SlimGen::Debugger> debuggerCallback(new SlimGen::Debugger(GetSimpleAssemblyName(assemblyName)));
 
 		wchar_t runtimeVersion[256];
 		DWORD runtimeVersionLength;
@@ -282,7 +293,7 @@ namespace SlimGen {
 			return std::pair<std::wstring const, std::vector<SlimGen::MethodNativeBlocks>>();
 		}
 
-		if(FAILED(debug->SetManagedHandler(&debuggerCallback))) {
+		if(FAILED(debug->SetManagedHandler(debuggerCallback.get()))) {
 			throw std::runtime_error("Unable to configure debugger callback.");
 		}
 
@@ -303,7 +314,6 @@ namespace SlimGen {
 		}
 
 		WaitForSingleObject(pi.hProcess, INFINITE);
-
-		return std::make_pair(debuggerCallback.GetNativeImagePath(), debuggerCallback.GetNativeMethodBlocks());
+		return std::make_pair(debuggerCallback->GetNativeImagePath(), debuggerCallback->GetNativeMethodBlocks());
 	}
 }
