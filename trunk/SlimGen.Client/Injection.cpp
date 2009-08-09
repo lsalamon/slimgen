@@ -105,13 +105,13 @@ int InjectNativeCode(const std::wstring &imagePath, const std::vector<MethodDesc
 
 		IMAGE_SECTION_HEADER* sectionHeaders = reinterpret_cast<IMAGE_SECTION_HEADER*>(reinterpret_cast<char*>(&ntHeader->OptionalHeader) + ntHeader->FileHeader.SizeOfOptionalHeader);
 
-		for (std::vector<MethodDescriptor>::const_iterator method = methods.begin(); method != methods.end(); method++)
+		for each(MethodDescriptor const& method in methods)
 		{
 			IMAGE_SECTION_HEADER* section;
 			for (int i = 0; i < ntHeader->FileHeader.NumberOfSections; ++i)
 			{
 				
-				if (method->BaseAddress > sectionHeaders[i].VirtualAddress && method->BaseAddress <= sectionHeaders[i].VirtualAddress + sectionHeaders[i].Misc.VirtualSize) {
+				if (method.BaseAddress > sectionHeaders[i].VirtualAddress && method.BaseAddress <= sectionHeaders[i].VirtualAddress + sectionHeaders[i].Misc.VirtualSize) {
 					section = sectionHeaders + i;
 					break;
 				}
@@ -120,8 +120,8 @@ int InjectNativeCode(const std::wstring &imagePath, const std::vector<MethodDesc
 			if (section == 0)
 				continue;
 
-			long fileOffset = method->BaseAddress - (section->VirtualAddress - section->PointerToRawData);
-			memcpy(fileView.BasePointer() + fileOffset, method->Data, method->Length);
+			long fileOffset = method.BaseAddress - (section->VirtualAddress - section->PointerToRawData);
+			memcpy(fileView.BasePointer() + fileOffset, method.Data, method.Length);
 		}
 
 		fileView.Unmap();

@@ -33,6 +33,71 @@
 #include "Injection.h"
 #include "SgenFile.h"
 #include "..\DebuggerLib\Debugger.h"
+#include <intrin.h>
+class CpuId {
+public:
+	CpuId() {
+		__cpuid(CPUInfo, 1);
+	}
+
+	bool HasMMXSupport() const {
+		return (CPUInfo[3] & MMXSupportBit) != 0;
+	}
+
+	bool HasSSESupport() const {
+		return (CPUInfo[3] & SSESupportBit) != 0;
+	}
+
+	bool HasSSE2Support() const {
+		return (CPUInfo[3] & SSE2SupportBit) != 0;
+	}
+
+	bool HasSSE3Support() const {
+		return (CPUInfo[2] & SSE3SupportBit) != 0;
+	}
+
+	bool HasSSSE3Support() const {
+		return (CPUInfo[2] & SSSE3SupportBit) != 0;
+	}
+
+	bool HasSSE41Support() const {
+		return (CPUInfo[2] & SSE41SupportBit) != 0;
+	}
+
+	bool HasSSE42Support() const {
+		return (CPUInfo[2] & SSE42SupportBit) != 0;
+	}
+
+	InstructionSetSpecifier::Specifier GetBestInstructionSet() const {
+		if(HasSSE42Support())
+			return InstructionSetSpecifier::SSE42;
+		if(HasSSE41Support())
+			return InstructionSetSpecifier::SSE41;
+		if(HasSSSE3Support())
+			return InstructionSetSpecifier::SSSE3;
+		if(HasSSE3Support())
+			return InstructionSetSpecifier::SSE3;
+		if(HasSSE2Support())
+			return InstructionSetSpecifier::SSE2;
+		if(HasSSESupport())
+			return InstructionSetSpecifier::SSE;
+		if(HasMMXSupport())
+			return InstructionSetSpecifier::MMX;
+
+		return InstructionSetSpecifier::Default;
+	}
+private:
+	enum SupportBits {
+		MMXSupportBit = 1 << 23,
+		SSESupportBit = 1 << 25,
+		SSE2SupportBit = 1 << 26,
+		SSE3SupportBit = 1,
+		SSSE3SupportBit = 1 << 9,
+		SSE41SupportBit = 1 << 19,
+		SSE42SupportBit = 1 << 20
+	};
+	int CPUInfo[4];
+};
 
 int wmain(int argc, wchar_t** argv)
 {
@@ -56,7 +121,13 @@ int wmain(int argc, wchar_t** argv)
 	LoadSgen(argv[2], sgenFile);
 
 	std::vector<SgenMethod> methods;
-	GetMethodsForPlatformInstructionSet(PlatformSpecifier::X86, InstructionSetSpecifier::SSE2, sgenFile, methods);
+
+	CpuId cpuid;
+#ifdef _M_X64
+	GetMethodsForPlatformInstructionSet(PlatformSpecifier::X64, cpuid.GetBestInstructionSet(), sgenFile, methods);
+#else
+	GetMethodsForPlatformInstructionSet(PlatformSpecifier::X86, cpuid.GetBestInstructionSet(), sgenFile, methods);
+#endif
 
 	std::vector<MethodDescriptor> descriptors;
 	for each(const SgenMethod &method in methods)
@@ -71,10 +142,12 @@ int wmain(int argc, wchar_t** argv)
 		if(block == info.second.end())
 			throw std::runtime_error("fuck off");
 
-		for (int i = 0; i < block->CodeChunks.size(); i++)
+		for (std::size_t i = 0; i < block->CodeChunks.size(); i++)
 		{
 			MethodDescriptor descriptor;
-			descriptor.BaseAddress = block->CodeChunks.at(i).startAddr;
+			if(block->CodeChunks.at(i).startAddr > 0xFFFFFFFF)
+				throw std::runtime_error("Method offset is larger than size of DWORD.");
+			descriptor.BaseAddress = static_cast<DWORD>(block->CodeChunks.at(i).startAddr);
 			descriptor.Length = method.Chunks.at(i).Length;
 			descriptor.Data = &method.Chunks.at(i).Data[0];
 
