@@ -9,6 +9,9 @@ namespace SlimGen.Performance.Test
 {
     class Program
     {
+        private const int MatrixCount = 100000;
+        private const int TestCount = 100;
+
         static void FillMatrixArray(Matrix[] m)
         {
             var r = new Random();
@@ -37,9 +40,9 @@ namespace SlimGen.Performance.Test
         }
         static void Main(string[] args)
         {
-            var source1 = new Matrix[100000];
-            var source2 = new Matrix[100000];
-            var result = new Matrix[100000];
+            var source1 = new Matrix[MatrixCount];
+            var source2 = new Matrix[MatrixCount];
+            var result = new Matrix[MatrixCount];
             var watch = new Stopwatch();
 
             FillMatrixArray(source1);
@@ -67,23 +70,37 @@ namespace SlimGen.Performance.Test
             watch.Stop();
             watch.Reset();
 
-            watch.Start();
-            for (int i = 0; i < result.Length; ++i)
+            var slimGenMultiplyTickSum = 0L;
+            var multiplyTickSum = 0L;
+            for (var j = 0; j < TestCount; ++j)
             {
-                Matrix.Multiply(ref source1[i], ref source2[i], out result[i]);
-            }
-            watch.Stop();
-            Console.WriteLine("Multiply        tick count: {0}", watch.ElapsedTicks);
-            watch.Reset();
+                watch.Start();
+                for (var i = 0; i < result.Length; ++i)
+                {
+                    Matrix.Multiply(ref source1[i], ref source2[i], out result[i]);
+                }
+                watch.Stop();
+                Console.WriteLine("Multiply        tick count: {0}", watch.ElapsedTicks);
+                multiplyTickSum += watch.ElapsedTicks;
+                watch.Reset();
 
-            watch.Start();
-            for (int i = 0; i < result.Length; ++i)
-            {
-                Matrix.SlimGenMultiply(ref source1[i], ref source2[i], out result[i]);
+                watch.Start();
+                for (var i = 0; i < result.Length; ++i)
+                {
+                    Matrix.SlimGenMultiply(ref source1[i], ref source2[i], out result[i]);
+                }
+                watch.Stop();
+                Console.WriteLine("SlimGenMultiply tick count: {0}", watch.ElapsedTicks);
+                slimGenMultiplyTickSum += watch.ElapsedTicks;
+                watch.Reset();
+
+                Console.WriteLine();
             }
-            watch.Stop();
-            Console.WriteLine("SlimGenMultiply tick count: {0}", watch.ElapsedTicks);
-            watch.Reset();
+
+            Console.WriteLine("Total Matrix Count Per Run:  {0:n0}", MatrixCount);
+            Console.WriteLine("Multiply        Total Ticks: {0:n0}", multiplyTickSum);
+            Console.WriteLine("SlimGenMultiply Total Ticks: {0:n0}", slimGenMultiplyTickSum);
+            Console.WriteLine("Improvement:                 {0:P}", 1 - slimGenMultiplyTickSum / (double)multiplyTickSum);
         }
     }
 }
