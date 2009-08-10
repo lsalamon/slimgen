@@ -10,5 +10,4 @@ SlimGen.Client SlimGen.Performance.Math.dll test.sgen > NUL
 ECHO ================================================================================Beggining test run
 ECHO ================================================================================
 SlimGen.Performance.Test.exe
-C:\Windows\Microsoft.NET\Framework\v2.0.50727\ngen.exe uninstall /silent SlimGen.Performance.Test.exe
-C:\Windows\Microsoft.NET\Framework\v2.0.50727\ngen.exe uninstall /silent SlimGen.Performance.Math.dll
+
