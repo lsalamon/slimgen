@@ -7,61 +7,48 @@ using System.Text;
 using System.Windows.Forms;
 using System.Runtime.InteropServices;
 using SlimGen.Properties;
+using SlimGen.Dialogs;
+using System.Diagnostics;
+using System.IO;
 
 namespace SlimGen
 {
     public partial class MainForm : Form
     {
-        [DllImport("user32.dll", CharSet = CharSet.Auto)]
-        static extern IntPtr SendMessage(IntPtr hWnd, UInt32 Msg, IntPtr wParam, IntPtr lParam);
-
-        const int BM_SETIMAGE = 0x00F7;
+        string BinDirectory;
 
         public MainForm()
         {
             InitializeComponent();
+            Font = SystemFonts.DefaultFont;
 
-            SetButtonImage(templatesButton, Resources.templates);
-            SetButtonImage(createXmlButton, Resources.create);
-            SetButtonImage(compileButton, Resources.compile);
-            SetButtonImage(editXmlButton, Resources.edit);
-            SetButtonImage(ngenButton, Resources.ngen);
-            SetButtonImage(testButton, Resources.test);
+            BinDirectory = Path.Combine(Application.StartupPath, "bin");
         }
 
-        public static void SetButtonImage(Button button, Bitmap image)
+        void templatesButton_Click(object sender, EventArgs e)
         {
-            SendMessage(button.Handle, BM_SETIMAGE, new IntPtr(1), image.GetHicon());
-        }
+            var dialog = new TemplatesDialog();
+            if (dialog.ShowDialog(this) == DialogResult.OK)
+            {
+                var startInfo = new ProcessStartInfo();
+                startInfo.UseShellExecute = false;
+                startInfo.Arguments = dialog.AssemblyPath;
 
-        private void templatesButton_Click(object sender, EventArgs e)
-        {
+                if (dialog.Platform == Platform.X86 || dialog.Platform == Platform.Both)
+                {
+                    startInfo.FileName = Path.Combine(BinDirectory, "tg.exe");
+                    Process.Start(startInfo);
+                }
 
-        }
+                if (dialog.Platform == Platform.X64 || dialog.Platform == Platform.Both)
+                {
+                    startInfo.FileName = Path.Combine(BinDirectory, "tg64.exe");
+                    Process.Start(startInfo);
+                }
 
-        private void createXmlButton_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void compileButton_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void editXmlButton_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void ngenButton_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void testButton_Click(object sender, EventArgs e)
-        {
-
+                foreach (var file in Directory.GetFiles(BinDirectory, "*.asm", SearchOption.TopDirectoryOnly))
+                    File.Move(file, Path.Combine(dialog.OutputPath, file));
+            }
         }
     }
 }
