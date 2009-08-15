@@ -8,47 +8,109 @@ using System.Reflection;
 
 namespace SlimGen
 {
-    namespace Generator
+    [Serializable]
+    [XmlType("slimgen.build")]
+    public class Project
     {
-        class ReplaceMethodNativeAttribute : Attribute
-        {
-        }
-    }
+        [XmlElement("platform")]
+        public Platform[] Platforms = new Platform[2];
 
-    class Project
-    {
+        [XmlAttribute("assembly")]
+        public string AssemblyName;
+
+        [XmlIgnore]
         public string FileName
         {
             get;
             private set;
         }
 
+        [XmlIgnore]
         public bool Changed
         {
             get;
             set;
         }
 
-        public Build Build
+        [XmlIgnore]
+        public Platform PlatformX86
         {
-            get;
-            private set;
+            get { return Platforms[0]; }
+            private set { Platforms[0] = value; }
         }
 
-        public Project(Build build)
+        [XmlIgnore]
+        public Platform PlatformX64
         {
-            Build = build;
+            get { return Platforms[1]; }
+            private set { Platforms[1] = value; }
+        }
+
+        private Project()
+        {
+            PlatformX86 = new Platform(PlatformSpecifier.X86);
+            PlatformX64 = new Platform(PlatformSpecifier.X64);
         }
 
         public Project(string assemblyName)
+            : this()
         {
-            Build = new Build();
-            Build.Assembly = assemblyName;
-            Build.Platforms = new Platform[2];
-            Build.Platforms[0] = new Platform() { Type = PlatformSpecifier.X86 };
-            Build.Platforms[1] = new Platform() { Type = PlatformSpecifier.X64 };
+            AssemblyName = assemblyName;
 
-            List<Method> methods = new List<Method>();
+            var methods = ExtractMethods(assemblyName);
+            PlatformX86.Methods = methods;
+            PlatformX64.Methods = new List<Method>(methods);
+
+            Changed = true;
+        }
+
+        public static Project FromFile(string fileName)
+        {
+            Project project = null;
+
+            var serializer = new XmlSerializer(typeof(Project));
+            try
+            {
+                using (var file = new FileStream(fileName, FileMode.Open))
+                    project = (Project)serializer.Deserialize(file);
+            }
+            catch (Exception)
+            {
+                MessageBox.Show("Invalid project file.", "SlimGen", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return null;
+            }
+
+            project.FileName = fileName;
+            return project;
+        }
+
+        public void Save(string fileName)
+        {
+            if (!Changed || (!string.IsNullOrEmpty(FileName) && fileName == FileName))
+                return;
+
+            var serializer = new XmlSerializer(typeof(Project));
+            try
+            {
+                using (var file = new FileStream(fileName, FileMode.Create))
+                    serializer.Serialize(file, this);
+            }
+            catch (Exception)
+            {
+                MessageBox.Show("Error occurred while saving project.", "SlimGen", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            Changed = false;
+        }
+
+        public void Refresh()
+        {
+        }
+
+        static List<Method> ExtractMethods(string assemblyName)
+        {
+            var methods = new List<Method>();
             var file = new FileInfo(assemblyName);
             var assembly = file.Exists ? Assembly.ReflectionOnlyLoadFrom(file.FullName) : Assembly.ReflectionOnlyLoad(assemblyName);
 
@@ -58,61 +120,16 @@ namespace SlimGen
                 {
                     foreach (var attribute in CustomAttributeData.GetCustomAttributes(method))
                     {
-                        if (attribute.ToString().Trim('{', '[', '(', ')', ']', '}') == typeof(SlimGen.Generator.ReplaceMethodNativeAttribute).FullName)
+                        if (attribute.ToString() == "[SlimGen.Generator.ReplaceMethodNativeAttribute()]")
                         {
-                            methods.Add(new Method() { Name = type.FullName + "." + method.Name });
+                            methods.Add(new Method(type.FullName + "." + method.Name, Signature.Build(method)));
                             break;
                         }
                     }
                 }
             }
 
-            Build.Platforms[0].Methods = methods.ToArray();
-            Build.Platforms[1].Methods = methods.ToArray();
-
-            Changed = true;
-        }
-
-        public static Project FromFile(string fileName)
-        {
-            Build build = null;
-
-            var serializer = new XmlSerializer(typeof(Build));
-            try
-            {
-                using (var file = new FileStream(fileName, FileMode.Open))
-                    build = (Build)serializer.Deserialize(file);
-            }
-            catch (Exception)
-            {
-                MessageBox.Show("Invalid project file.", "SlimGen", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return null;
-            }
-
-            Project project = new Project(build);
-            project.FileName = fileName;
-
-            return project;
-        }
-
-        public void Save(string fileName)
-        {
-            if (!Changed && !string.IsNullOrEmpty(FileName) && fileName == FileName)
-                return;
-
-            var serializer = new XmlSerializer(typeof(Build));
-            try
-            {
-                using (var file = new FileStream(fileName, FileMode.Open))
-                    serializer.Serialize(file, Build);
-            }
-            catch (Exception)
-            {
-                MessageBox.Show("Error occurred while saving project.", "SlimGen", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
-
-            Changed = false;
+            return methods;
         }
     }
 }

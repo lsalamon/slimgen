@@ -7,6 +7,7 @@ using System.Text;
 using System.Windows.Forms;
 using System.Runtime.InteropServices;
 using System.IO;
+using SlimGen.Properties;
 
 namespace SlimGen
 {
@@ -17,7 +18,6 @@ namespace SlimGen
 
         [DllImport("user32.dll", CharSet = CharSet.Unicode)]
         static extern IntPtr SendMessage(HandleRef hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
-
 
         Project project;
 
@@ -31,6 +31,11 @@ namespace SlimGen
             SetWindowTheme(methodView.Handle, "explorer", null);
             SendMessage(new HandleRef(methodView, methodView.Handle), 0x1100 + 44, new IntPtr(0x0040), new IntPtr(0x0040));
             SendMessage(new HandleRef(methodView, methodView.Handle), 0x1100 + 44, new IntPtr(0x0020), new IntPtr(0x0020));
+
+            treeImages.Images.Add("assembly", Resources.assembly);
+            treeImages.Images.Add("namespace", Resources._namespace);
+            treeImages.Images.Add("class", Resources._class);
+            treeImages.Images.Add("method", Resources.method);
 
             UpdateInterface();
         }
@@ -70,6 +75,7 @@ namespace SlimGen
                     Save();
             }
 
+            project = null;
             return true;
         }
 
@@ -104,6 +110,7 @@ namespace SlimGen
                 installMenuItem.Enabled = false;
                 uninstallMenuItem.Enabled = false;
                 compileMenuItem.Enabled = false;
+                saveToolStripButton.Enabled = false;
                 performanceTestMenuItem.Enabled = false;
                 refreshToolStripButton.Enabled = false;
                 compileToolStripButton.Enabled = false;
@@ -123,6 +130,7 @@ namespace SlimGen
                 installMenuItem.Enabled = true;
                 uninstallMenuItem.Enabled = true;
                 compileMenuItem.Enabled = true;
+                saveToolStripButton.Enabled = true;
                 performanceTestMenuItem.Enabled = true;
                 refreshToolStripButton.Enabled = true;
                 compileToolStripButton.Enabled = true;
@@ -133,30 +141,37 @@ namespace SlimGen
                 else
                     Text = Path.GetFileNameWithoutExtension(project.FileName) + " - SlimGen";
 
-                TreeNode node = methodView.Nodes.Add(Path.GetFileName(project.Build.Assembly));
-                for (int i = 0; i < project.Build.Platforms[0].Methods.Length; i++)
+                FillMethods();
+            }
+        }
+
+        void FillMethods()
+        {
+            TreeNode node = methodView.Nodes.Add(Path.GetFileName(project.AssemblyName));
+            for (int i = 0; i < project.PlatformX86.Methods.Count; i++)
+            {
+                var method = project.PlatformX86.Methods[i];
+                string name = method.Name;
+
+                int index = name.IndexOf('.');
+                while (index != -1)
                 {
-                    var method = project.Build.Platforms[0].Methods[i];
-                    string name = method.Name;
+                    string piece = name.Substring(0, index);
+                    name = name.Substring(index + 1);
 
-                    int index = name.IndexOf('.');
-                    while (index != -1)
-                    {
-                        string piece = name.Substring(0, index);
-                        name = name.Substring(index + 1);
+                    if (node.Nodes.ContainsKey(piece))
+                        node = node.Nodes[piece];
+                    else
+                        node = node.Nodes.Add(piece, piece, "namespace", "namespace");
 
-                        if (node.Nodes.ContainsKey(piece))
-                            node = node.Nodes[piece];
-                        else
-                            node = node.Nodes.Add(piece, piece);
-
-                        index = name.IndexOf('.');
-                    }
-
-                    var newNode = node.Nodes.Add(name, name);
-                    newNode.Tag = i;
-                    node = methodView.Nodes[0];
+                    index = name.IndexOf('.');
                 }
+
+                node.ImageKey = "class";
+                node.SelectedImageKey = "class";
+                var newNode = node.Nodes.Add(method.Signature, name, "method", "method");
+                newNode.Tag = i;
+                node = methodView.Nodes[0];
             }
         }
 
@@ -279,7 +294,7 @@ namespace SlimGen
 
         void refreshToolStripButton_Click(object sender, EventArgs e)
         {
-            SaveAs();
+            RefreshAssembly();
         }
 
         void compileToolStripButton_Click(object sender, EventArgs e)

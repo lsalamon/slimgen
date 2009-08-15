@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
             this.menuStrip = new System.Windows.Forms.MenuStrip();
             this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -69,6 +70,7 @@
             this.statusStrip = new System.Windows.Forms.StatusStrip();
             this.splitContainer = new System.Windows.Forms.SplitContainer();
             this.methodView = new System.Windows.Forms.TreeView();
+            this.treeImages = new System.Windows.Forms.ImageList(this.components);
             this.listView1 = new System.Windows.Forms.ListView();
             this.openAssemblyDialog = new System.Windows.Forms.OpenFileDialog();
             this.openProjectDialog = new System.Windows.Forms.OpenFileDialog();
@@ -290,6 +292,7 @@
             this.newToolStripButton.Name = "newToolStripButton";
             this.newToolStripButton.Size = new System.Drawing.Size(23, 29);
             this.newToolStripButton.Text = "&New";
+            this.newToolStripButton.ToolTipText = "Create a new project";
             this.newToolStripButton.Click += new System.EventHandler(this.newToolStripButton_Click);
             // 
             // openToolStripButton
@@ -300,6 +303,7 @@
             this.openToolStripButton.Name = "openToolStripButton";
             this.openToolStripButton.Size = new System.Drawing.Size(23, 29);
             this.openToolStripButton.Text = "&Open";
+            this.openToolStripButton.ToolTipText = "Open an existing project";
             this.openToolStripButton.Click += new System.EventHandler(this.openToolStripButton_Click);
             // 
             // saveToolStripButton
@@ -310,6 +314,7 @@
             this.saveToolStripButton.Name = "saveToolStripButton";
             this.saveToolStripButton.Size = new System.Drawing.Size(23, 29);
             this.saveToolStripButton.Text = "&Save";
+            this.saveToolStripButton.ToolTipText = "Save changes to the project";
             this.saveToolStripButton.Click += new System.EventHandler(this.saveToolStripButton_Click);
             // 
             // toolStripSeparator7
@@ -381,6 +386,7 @@
             this.refreshToolStripButton.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.refreshToolStripButton.Name = "refreshToolStripButton";
             this.refreshToolStripButton.Size = new System.Drawing.Size(23, 29);
+            this.refreshToolStripButton.ToolTipText = "Refresh the assembly";
             this.refreshToolStripButton.Click += new System.EventHandler(this.refreshToolStripButton_Click);
             // 
             // toolStripSeparator4
@@ -396,6 +402,7 @@
             this.compileToolStripButton.Name = "compileToolStripButton";
             this.compileToolStripButton.Size = new System.Drawing.Size(23, 29);
             this.compileToolStripButton.Text = "toolStripButton2";
+            this.compileToolStripButton.ToolTipText = "Compile to .sgen";
             this.compileToolStripButton.Click += new System.EventHandler(this.compileToolStripButton_Click);
             // 
             // testToolStripButton
@@ -406,6 +413,7 @@
             this.testToolStripButton.Name = "testToolStripButton";
             this.testToolStripButton.Size = new System.Drawing.Size(23, 29);
             this.testToolStripButton.Text = "toolStripButton3";
+            this.testToolStripButton.ToolTipText = "Run a performance test";
             this.testToolStripButton.Click += new System.EventHandler(this.testToolStripButton_Click);
             // 
             // statusStrip
@@ -436,11 +444,20 @@
             // methodView
             // 
             this.methodView.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.methodView.ImageIndex = 0;
+            this.methodView.ImageList = this.treeImages;
             this.methodView.Location = new System.Drawing.Point(0, 0);
             this.methodView.Name = "methodView";
-            this.methodView.PathSeparator = ".";
+            this.methodView.SelectedImageIndex = 0;
+            this.methodView.ShowLines = false;
             this.methodView.Size = new System.Drawing.Size(269, 353);
             this.methodView.TabIndex = 0;
+            // 
+            // treeImages
+            // 
+            this.treeImages.ColorDepth = System.Windows.Forms.ColorDepth.Depth24Bit;
+            this.treeImages.ImageSize = new System.Drawing.Size(16, 16);
+            this.treeImages.TransparentColor = System.Drawing.Color.Fuchsia;
             // 
             // listView1
             // 
@@ -460,13 +477,13 @@
             // openProjectDialog
             // 
             this.openProjectDialog.DefaultExt = "sgproj";
-            this.openProjectDialog.Filter = "SGen Projects (*.xml)|*.xml|All files (*.*)|*.*";
+            this.openProjectDialog.Filter = "SGen Projects (*.sgproj)|*.sgproj|All files (*.*)|*.*";
             this.openProjectDialog.Title = "Open Project";
             // 
             // saveProjectDialog
             // 
             this.saveProjectDialog.DefaultExt = "sgproj";
-            this.saveProjectDialog.Filter = "SGen Projects (*.xml)|*.xml|All files (*.*)|*.*";
+            this.saveProjectDialog.Filter = "SGen Projects (*.sgproj)|*.sgproj|All files (*.*)|*.*";
             this.saveProjectDialog.Title = "Save Project";
             // 
             // MainForm
@@ -541,6 +558,7 @@
         private System.Windows.Forms.OpenFileDialog openAssemblyDialog;
         private System.Windows.Forms.OpenFileDialog openProjectDialog;
         private System.Windows.Forms.SaveFileDialog saveProjectDialog;
+        private System.Windows.Forms.ImageList treeImages;
     }
 }
 

@@ -22,6 +22,7 @@
 
 using System;
 using System.Xml.Serialization;
+using System.Collections.Generic;
 
 namespace SlimGen
 {
@@ -46,24 +47,23 @@ namespace SlimGen
     }
 
     [Serializable]
-    [XmlType("slimgen.build")]
-    public class Build
-    {
-        [XmlAttribute("assembly")]
-        public string Assembly;
-
-        [XmlElement("platform")]
-        public Platform[] Platforms;
-    }
-
-    [Serializable]
     public class Platform
     {
         [XmlAttribute("type")]
         public PlatformSpecifier Type;
 
         [XmlElement("method")]
-        public Method[] Methods;
+        public List<Method> Methods;
+
+        public Platform(PlatformSpecifier type)
+        {
+            Type = type;
+            Methods = new List<Method>();
+        }
+
+        Platform()
+        {
+        }
     }
 
     [Serializable]
@@ -76,7 +76,19 @@ namespace SlimGen
         public string Signature;
 
         [XmlElement("instructionSet")]
-        public InstructionSet[] InstructionSets;
+        public List<InstructionSet> InstructionSets;
+
+        public Method(string name, string signature)
+        {
+            Name = name;
+            Signature = signature;
+
+            InstructionSets = new List<InstructionSet>();
+        }
+
+        Method()
+        {
+        }
     }
 
     [Serializable]
@@ -89,7 +101,7 @@ namespace SlimGen
         public int ChunkCount;
 
         [XmlElement("codeChunk")]
-        public CodeChunk[] CodeChunks;
+        public List<CodeChunk> CodeChunks;
     }
 
     [Serializable]

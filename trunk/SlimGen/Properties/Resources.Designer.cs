@@ -60,6 +60,27 @@ namespace SlimGen.Properties {
             }
         }
         
+        internal static System.Drawing.Bitmap _class {
+            get {
+                object obj = ResourceManager.GetObject("_class", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        internal static System.Drawing.Bitmap _namespace {
+            get {
+                object obj = ResourceManager.GetObject("_namespace", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        internal static System.Drawing.Bitmap assembly {
+            get {
+                object obj = ResourceManager.GetObject("assembly", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
         internal static System.Drawing.Bitmap Compile {
             get {
                 object obj = ResourceManager.GetObject("Compile", resourceCulture);
@@ -84,6 +105,13 @@ namespace SlimGen.Properties {
         internal static System.Drawing.Bitmap List {
             get {
                 object obj = ResourceManager.GetObject("List", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        internal static System.Drawing.Bitmap method {
+            get {
+                object obj = ResourceManager.GetObject("method", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
