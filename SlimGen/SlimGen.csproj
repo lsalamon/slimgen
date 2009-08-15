@@ -69,6 +69,7 @@
       <DependentUpon>Settings.settings</DependentUpon>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
+    <Compile Include="Signature.cs" />
     <Compile Include="ToolStripNativeRenderer.cs" />
     <Compile Include="XmlObjects.cs" />
   </ItemGroup>
@@ -92,6 +93,18 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\Test.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\assembly.bmp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\class.bmp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\method.bmp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\namespace.bmp" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
