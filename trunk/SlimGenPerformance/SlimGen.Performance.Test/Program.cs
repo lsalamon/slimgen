@@ -48,11 +48,33 @@ namespace SlimGen.Performance.Test
             FillMatrixArray(source1);
             FillMatrixArray(source2);
 
+            var test = new Matrix() {M11 = 1, M22 = 1, M33 = 1, M44 = 1};
+            var test2 = new Matrix()
+                            {
+                                M11 = 1,
+                                M12 = 2,
+                                M13 = 3,
+                                M14 = 4,
+                                M21 = 5,
+                                M22 = 6,
+                                M23 = 7,
+                                M24 = 8,
+                                M31 = 9,
+                                M32 = 10,
+                                M33 = 11,
+                                M34 = 12,
+                                M41 = 13,
+                                M42 = 14,
+                                M43 = 15,
+                                M44 = 16
+                            };
+            Matrix.SlimGenMultiply(ref test, ref test2, out test);
+            Console.WriteLine("{0} {1} {2} {3}\n{4} {5} {6} {7}\n{8} {9} {10} {11}\n{12} {13} {14} {15}", test.M11, test.M12, test.M13, test.M14, test.M21, test.M22, test.M23, test.M24, test.M31, test.M32, test.M33, test.M34, test.M41, test.M42, test.M43, test.M44);
+            Matrix.Multiply(ref test, ref test2, out test);
+            
             watch.Start();
             watch.Stop();
             watch.Reset();
-            Matrix.SlimGenMultiply(ref source1[0], ref source2[0], out result[0]);
-            Matrix.Multiply(ref source1[0], ref source2[0], out result[0]);
 
             watch.Start();
             for (var i = 0; i < result.Length; ++i)
