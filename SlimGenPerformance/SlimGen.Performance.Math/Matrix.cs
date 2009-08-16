@@ -19,7 +19,8 @@ namespace SlimGen.Performance.Math {
 		public float M41, M42, M43, M44;
 
 		[ReplaceMethodNative]
-		public static void SlimGenMultiply(ref Matrix left, ref Matrix right, out Matrix r) {
+		public static void SlimGenMultiply(ref Matrix left, ref Matrix right, out Matrix result) {
+            Matrix r;
 			r.M11 = (left.M11 * right.M11) + (left.M12 * right.M21) + (left.M13 * right.M31) + (left.M14 * right.M41);
 			r.M12 = (left.M11 * right.M12) + (left.M12 * right.M22) + (left.M13 * right.M32) + (left.M14 * right.M42);
 			r.M13 = (left.M11 * right.M13) + (left.M12 * right.M23) + (left.M13 * right.M33) + (left.M14 * right.M43);
@@ -36,9 +37,11 @@ namespace SlimGen.Performance.Math {
 			r.M42 = (left.M41 * right.M12) + (left.M42 * right.M22) + (left.M43 * right.M32) + (left.M44 * right.M42);
 			r.M43 = (left.M41 * right.M13) + (left.M42 * right.M23) + (left.M43 * right.M33) + (left.M44 * right.M43);
 			r.M44 = (left.M41 * right.M14) + (left.M42 * right.M24) + (left.M43 * right.M34) + (left.M44 * right.M44);
+		    result = r;
 		}
 
-		public static void Multiply(ref Matrix left, ref Matrix right, out Matrix r) {
+		public static void Multiply(ref Matrix left, ref Matrix right, out Matrix result) {
+		    Matrix r;
 			r.M11 = (left.M11 * right.M11) + (left.M12 * right.M21) + (left.M13 * right.M31) + (left.M14 * right.M41);
 			r.M12 = (left.M11 * right.M12) + (left.M12 * right.M22) + (left.M13 * right.M32) + (left.M14 * right.M42);
 			r.M13 = (left.M11 * right.M13) + (left.M12 * right.M23) + (left.M13 * right.M33) + (left.M14 * right.M43);
@@ -55,6 +58,7 @@ namespace SlimGen.Performance.Math {
 			r.M42 = (left.M41 * right.M12) + (left.M42 * right.M22) + (left.M43 * right.M32) + (left.M44 * right.M42);
 			r.M43 = (left.M41 * right.M13) + (left.M42 * right.M23) + (left.M43 * right.M33) + (left.M44 * right.M43);
 			r.M44 = (left.M41 * right.M14) + (left.M42 * right.M24) + (left.M43 * right.M34) + (left.M44 * right.M44);
+		    result = r;
 		}
 	}
 }

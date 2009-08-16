@@ -32,7 +32,7 @@ start:		mov 	eax, [esp + 4]
 			addps	xmm1, xmm3
 			addps	xmm0, xmm1
 			
-			movups  [eax], xmm0 ; Calculate row 0 of new matrix
+			movups  [esp - 0x20], xmm0 ; store row 0 of new matrix
 			
 			movups	xmm0, [ecx + 0x10]
 			movaps	xmm1, xmm0
@@ -51,7 +51,7 @@ start:		mov 	eax, [esp + 4]
 			addps	xmm1, xmm3
 			addps	xmm0, xmm1
 			
-			movups  [eax + 0x10], xmm0 ; Calculate row 1 of new matrix
+			movups  [esp - 0x30], xmm0 ; store row 1 of new matrix
 			
 			movups	xmm0, [ecx + 0x20]
 			movaps	xmm1, xmm0
@@ -70,7 +70,7 @@ start:		mov 	eax, [esp + 4]
 			addps	xmm1, xmm3
 			addps	xmm0, xmm1
 			
-			movups  [eax + 0x20], xmm0 ; Calculate row 2 of new matrix
+			movups  [esp - 0x40], xmm0 ; store row 2 of new matrix
 			
 			movups	xmm0, [ecx + 0x30]
 			movaps	xmm1, xmm0
@@ -89,7 +89,13 @@ start:		mov 	eax, [esp + 4]
 			addps	xmm1, xmm3
 			addps	xmm0, xmm1
 			
-			movups  [eax + 0x30], xmm0 ; Calculate row 3 of new matrix
+			movups  [eax + 0x30], xmm0 ; store row 3 of new matrix
+			movups  xmm0, [esp - 0x40]
+			movups  [eax + 0x20], xmm0
+			movups  xmm0, [esp - 0x30]
+			movups  [eax + 0x10], xmm0
+			movups  xmm0, [esp - 0x20]
+			movups  [eax], xmm0
             ret     4
 ;-------------------------------------------------------------------------------
 ; Buffer out to the size of the original method: 
