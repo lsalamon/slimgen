@@ -99,33 +99,6 @@ private:
 	int CPUInfo[4];
 };
 
-void GetMethodDescriptors( std::vector<SgenMethod> methods, std::pair<std::wstring, std::vector<SlimGen::MethodNativeBlocks>> &info, std::vector<MethodDescriptor>& descriptors)
-{
-	for each(const SgenMethod &method in methods)
-	{
-		std::vector<SlimGen::MethodNativeBlocks>::const_iterator block = info.second.begin();
-		for(; block != info.second.end(); ++block)
-		{
-			if(block->Signature == method.MethodSignature)
-				break;
-		}
-
-		if(block == info.second.end())
-			throw std::runtime_error("Unknown method signature.");
-
-		for (std::size_t i = 0; i < block->CodeChunks.size(); i++)
-		{
-			MethodDescriptor descriptor;
-			if(block->CodeChunks.at(i).startAddr > 0xFFFFFFFF)
-				throw std::runtime_error("Method offset is larger than size of DWORD.");
-			descriptor.BaseAddress = static_cast<DWORD>(block->CodeChunks.at(i).startAddr);
-			descriptor.Length = method.Chunks.at(i).Length;
-			descriptor.Data = &method.Chunks.at(i).Data[0];
-
-			descriptors.push_back(descriptor);
-		}
-	}
-}
 int wmain(int argc, wchar_t** argv)
 {
 	if(argc != 3) {
@@ -133,14 +106,12 @@ int wmain(int argc, wchar_t** argv)
 		return 0;
 	}
 
-	try {
-		std::pair<std::wstring, std::vector<SlimGen::MethodNativeBlocks>> info;
-		SgenFile sgenFile;
+	std::pair<std::wstring, std::vector<SlimGen::MethodNativeBlocks>> info;
+	SgenFile sgenFile;
+	try
+	{
 		info = SlimGen::GetNativeImageInformation(argv[1]);
-		if(info.second.empty ())
-			return 0;
 		LoadSgen(argv[2], sgenFile);
-
 
 		std::vector<SgenMethod> methods;
 
@@ -151,16 +122,39 @@ int wmain(int argc, wchar_t** argv)
 		GetMethodsForPlatformInstructionSet(PlatformSpecifier::X86, cpuid.GetBestInstructionSet(), sgenFile, methods);
 #endif
 
-		if(methods.empty ()) {
-			std::cout<<"No methods to replace."<<std::endl;
-			return 0;
+		std::vector<MethodDescriptor> descriptors;
+		for each(const SgenMethod &method in methods)
+		{
+			std::vector<SlimGen::MethodNativeBlocks>::const_iterator block = info.second.begin();
+			for(; block != info.second.end(); ++block)
+			{
+				if(block->Signature == method.MethodSignature)
+					break;
+			}
+
+			if(block == info.second.end()) {
+				std::wcout<<"Unrecognized method signature."<<std::endl;
+				return -1;
+			}
+
+			for (std::size_t i = 0; i < block->CodeChunks.size(); i++)
+			{
+				MethodDescriptor descriptor;
+				if(block->CodeChunks.at(i).startAddr > 0xFFFFFFFF)
+					throw std::runtime_error("Method offset is larger than size of DWORD.");
+				descriptor.BaseAddress = static_cast<DWORD>(block->CodeChunks.at(i).startAddr);
+				descriptor.Length = method.Chunks.at(i).Length;
+				descriptor.Data = &method.Chunks.at(i).Data[0];
+
+				descriptors.push_back(descriptor);
+			}
 		}
 
-		std::vector<MethodDescriptor> descriptors;
-
-		GetMethodDescriptors(methods, info, descriptors);
 		InjectNativeCode(info.first, descriptors);
-	} catch(std::runtime_error& error) {
+
+	} 
+	catch(std::runtime_error& error)
+	{
 		std::cout<<"Unhandled exception encountered: "<<error.what()<<std::endl;
 		return -1;
 	}
