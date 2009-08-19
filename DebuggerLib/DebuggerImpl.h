@@ -37,6 +37,7 @@
 namespace SlimGen {
 	class DebuggerImpl : public ICorDebugManagedCallback, public ICorDebugManagedCallback2 {
 	public:
+		DebuggerImpl() : debug(CreateEvent(0, 0, FALSE, 0)) {}
 		ULONG STDMETHODCALLTYPE AddRef()  {
 			return InterlockedIncrement(reinterpret_cast<LONG*>(&refCount));
 		}
@@ -96,6 +97,7 @@ namespace SlimGen {
 			HRESULT STDMETHODCALLTYPE ExitProcess( 
 			ICorDebugProcess *pProcess) {
 				DEBUG_PRINT_ENTER
+				SetEvent(debug);
 				//pProcess->Detach();
 				return S_OK;
 		}
@@ -228,7 +230,11 @@ namespace SlimGen {
 			ICorDebugThread *pThread,
 			ICorDebugMDA *pMDA) CONTINUE_IMPL(pController)
 
+			void WaitForDebuggingToFinish() {
+				WaitForSingleObject (debug, INFINITE);
+			}
 	private:
+		HANDLE debug;
 		ULONG refCount;
 	};
 }

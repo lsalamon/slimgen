@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <slimgen.build>
 	<platform type="X86">
-		<method name="SlimGen.Performance.Math.Matrix.SlimGenMultiply" token="100663298">
+		<method name="SlimGen.Performance.Math.Matrix.SlimGenMultiply" token="(ref SlimGen.Performance.Math.Matrix, ref SlimGen.Performance.Math.Matrix, ref SlimGen.Performance.Math.Matrix)">
 			<instructionSet type="SSE2" chunkCount="1">
 				<codeChunk filename="SlimGen.Performance.Math.Matrix.SlimGenMultiply.asm" />
 			</instructionSet>

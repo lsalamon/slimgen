@@ -92,8 +92,6 @@ namespace SlimGen {
 		EnumerateAssemblies(pAppDomain);
 
 		pAppDomain->Continue(FALSE);
-		pAppDomain->Detach();
-		process->Detach();
 		return S_OK;
 	}
 
@@ -108,7 +106,17 @@ namespace SlimGen {
 		assemblyEnum->Next(assemblies.size(), &assemblies[0], &numberOfAssemblies);
 
 		for(std::size_t i = 0; i < assemblies.size(); ++i) {
-			EnumerateModules(assemblies[i]);
+			std::wstring moduleFileName(MAX_PATH, L'\0');
+			ULONG32 len;
+			assemblies[i]->GetName(MAX_PATH, &len, &moduleFileName[0]);
+			std::locale loc;
+			moduleFileName = moduleFileName.c_str();
+			std::use_facet<std::ctype<wchar_t> > (loc).tolower(&moduleFileName[0], &moduleFileName[moduleFileName.size()]);
+			if(moduleFileName.find(assemblySimpleName) != moduleFileName.npos) {
+				std::wcout<<moduleFileName<<std::endl;
+				EnumerateModules(assemblies[i]);
+			}
+			
 		}
 	}
 
@@ -136,13 +144,13 @@ namespace SlimGen {
 		HCORENUM typeEnum = 0;
 		mdTypeDef typeDef;
 		ULONG typeCount;
-		do {
-			metadata->EnumTypeDefs(&typeEnum, &typeDef, 1, &typeCount);
+		metadata->EnumTypeDefs(&typeEnum, &typeDef, 1, &typeCount);
+		while(typeCount) {
 			std::wstring typeName = GetTypeNameFromDef(metadata, typeDef);
 
 			EnumerateMethods(metadata, typeDef, module, typeName);
-
-		} while(typeCount > 0);
+			metadata->EnumTypeDefs(&typeEnum, &typeDef, 1, &typeCount);
+		}
 		metadata->CloseEnum(typeEnum);
 	}
 
@@ -151,11 +159,12 @@ namespace SlimGen {
 		HCORENUM methodEnum = 0;
 		mdMethodDef methodDef;
 		ULONG methodCount;
-		do {
-			metadata->EnumMethods(&methodEnum, typeDef, &methodDef, 1, &methodCount);
-
-			if(!HasAttribute(metadata, methodDef))
+		metadata->EnumMethods(&methodEnum, typeDef, &methodDef, 1, &methodCount);
+		while(methodCount) {
+			if(!HasAttribute(metadata, methodDef)) {
+				metadata->EnumMethods(&methodEnum, typeDef, &methodDef, 1, &methodCount);
 				continue;
+			}
 
 			CComPtr<ICorDebugFunction> function;
 			module->GetFunctionFromToken(methodDef, &function);
@@ -170,6 +179,7 @@ namespace SlimGen {
 					<<MethodReplacementAttribute
 					<<"] but does not have native code: "
 					<<typeName<<"."<<methodName<<std::endl;
+				metadata->EnumMethods(&methodEnum, typeDef, &methodDef, 1, &methodCount);
 				continue;
 			}
 
@@ -191,7 +201,8 @@ namespace SlimGen {
 			MethodNativeBlocks block = {signature, typeName + L"." + methodName, codeChunks};
 			
 			methodBlocks.push_back(block);
-		} while(methodCount > 0);
+			metadata->EnumMethods(&methodEnum, typeDef, &methodDef, 1, &methodCount);
+		}
 		metadata->CloseEnum(methodEnum);
 	}
 
@@ -268,7 +279,6 @@ namespace SlimGen {
 	std::pair<std::wstring, std::vector<SlimGen::MethodNativeBlocks>> GetNativeImageInformation( wchar_t* assemblyName )
 	{
 		ComInit cominit;
-		std::auto_ptr<SlimGen::Debugger> debuggerCallback(new SlimGen::Debugger(GetSimpleAssemblyName(assemblyName)));
 
 		wchar_t runtimeVersion[256];
 		DWORD runtimeVersionLength;
@@ -280,6 +290,8 @@ namespace SlimGen {
 		if(FAILED(CreateDebuggingInterfaceFromVersion(CorDebugLatestVersion, runtimeVersion, reinterpret_cast<IUnknown**>(&debug)))) {
 			throw std::runtime_error("Unable to create debugging interface.");
 		}
+
+		std::auto_ptr<SlimGen::Debugger> debuggerCallback(new SlimGen::Debugger(GetSimpleAssemblyName(assemblyName)));
 
 		if(FAILED(debug->Initialize())) {
 			std::wcout<<L"Unable to initialize debugger."<<std::endl;
@@ -306,7 +318,10 @@ namespace SlimGen {
 			throw std::runtime_error("Unable to create process.");
 		}
 
-		WaitForSingleObject(pi.hProcess, INFINITE);
+		debuggerCallback->WaitForDebuggingToFinish ();
+//		if(FAILED(debug->Terminate())) {
+//			std::wcout<<L"Unable to terminate debugger."<<std::endl;
+//		}
 		return std::make_pair(debuggerCallback->GetNativeImagePath(), debuggerCallback->GetNativeMethodBlocks());
 	}
 }

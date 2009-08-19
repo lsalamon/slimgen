@@ -137,6 +137,8 @@ int wmain(int argc, wchar_t** argv)
 		std::pair<std::wstring, std::vector<SlimGen::MethodNativeBlocks>> info;
 		SgenFile sgenFile;
 		info = SlimGen::GetNativeImageInformation(argv[1]);
+		if(info.second.empty ())
+			return 0;
 		LoadSgen(argv[2], sgenFile);
 
 
