@@ -99,37 +99,8 @@ private:
 	int CPUInfo[4];
 };
 
-int wmain(int argc, wchar_t** argv)
+void GetMethodDescriptors( std::vector<SgenMethod> methods, std::pair<std::wstring, std::vector<SlimGen::MethodNativeBlocks>> &info, std::vector<MethodDescriptor>& descriptors)
 {
-	if(argc != 3) {
-		std::cout<<"Usage: SlimGen.Client <Assembly> <Sgen Package>";
-		return 0;
-	}
-
-	std::pair<std::wstring, std::vector<SlimGen::MethodNativeBlocks>> info;
-	try
-	{
-		info = SlimGen::GetNativeImageInformation(argv[1]);
-	} 
-	catch(std::runtime_error& error)
-	{
-		std::cout<<"Unhandled exception encountered: "<<error.what()<<std::endl;
-		return -1;
-	}
-
-	SgenFile sgenFile;
-	LoadSgen(argv[2], sgenFile);
-
-	std::vector<SgenMethod> methods;
-
-	CpuId cpuid;
-#ifdef _M_X64
-	GetMethodsForPlatformInstructionSet(PlatformSpecifier::X64, cpuid.GetBestInstructionSet(), sgenFile, methods);
-#else
-	GetMethodsForPlatformInstructionSet(PlatformSpecifier::X86, cpuid.GetBestInstructionSet(), sgenFile, methods);
-#endif
-
-	std::vector<MethodDescriptor> descriptors;
 	for each(const SgenMethod &method in methods)
 	{
 		std::vector<SlimGen::MethodNativeBlocks>::const_iterator block = info.second.begin();
@@ -140,7 +111,7 @@ int wmain(int argc, wchar_t** argv)
 		}
 
 		if(block == info.second.end())
-			throw std::runtime_error("fuck off");
+			throw std::runtime_error("Unknown method signature.");
 
 		for (std::size_t i = 0; i < block->CodeChunks.size(); i++)
 		{
@@ -154,6 +125,41 @@ int wmain(int argc, wchar_t** argv)
 			descriptors.push_back(descriptor);
 		}
 	}
+}
+int wmain(int argc, wchar_t** argv)
+{
+	if(argc != 3) {
+		std::cout<<"Usage: SlimGen.Client <Assembly> <Sgen Package>";
+		return 0;
+	}
 
-	InjectNativeCode(info.first, descriptors);
+	try {
+		std::pair<std::wstring, std::vector<SlimGen::MethodNativeBlocks>> info;
+		SgenFile sgenFile;
+		info = SlimGen::GetNativeImageInformation(argv[1]);
+		LoadSgen(argv[2], sgenFile);
+
+
+		std::vector<SgenMethod> methods;
+
+		CpuId cpuid;
+#ifdef _M_X64
+		GetMethodsForPlatformInstructionSet(PlatformSpecifier::X64, cpuid.GetBestInstructionSet(), sgenFile, methods);
+#else
+		GetMethodsForPlatformInstructionSet(PlatformSpecifier::X86, cpuid.GetBestInstructionSet(), sgenFile, methods);
+#endif
+
+		if(methods.empty ()) {
+			std::cout<<"No methods to replace."<<std::endl;
+			return 0;
+		}
+
+		std::vector<MethodDescriptor> descriptors;
+
+		GetMethodDescriptors(methods, info, descriptors);
+		InjectNativeCode(info.first, descriptors);
+	} catch(std::runtime_error& error) {
+		std::cout<<"Unhandled exception encountered: "<<error.what()<<std::endl;
+		return -1;
+	}
 }
