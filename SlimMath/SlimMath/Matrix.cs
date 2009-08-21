@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 
+using SlimGen.Generator;
+
 namespace SlimMath {
     [StructLayout(LayoutKind.Sequential)]
     public struct Matrix {
@@ -123,6 +125,7 @@ namespace SlimMath {
             m = new Matrix();
         }
 
+        [ReplaceMethodNative]
         public static void Add(ref Matrix left, ref Matrix right, out Matrix result) {
             Matrix r;
             r.M11 = left.M11 + right.M11;
@@ -147,6 +150,7 @@ namespace SlimMath {
             result = r;
         }
 
+        [ReplaceMethodNative]
         public static void Subtract(ref Matrix left, ref Matrix right, out Matrix result) {
             Matrix r;
             r.M11 = left.M11 - right.M11;
@@ -171,7 +175,8 @@ namespace SlimMath {
             result = r;
         }
 
-        public static void Scale(ref Matrix m, ref float scalar, out Matrix result) {
+        [ReplaceMethodNative]
+        public static void Scale(ref Matrix m, float scalar, out Matrix result) {
             Matrix r;
             r.M11 = m.M11 * scalar;
             r.M12 = m.M12 * scalar;
@@ -195,6 +200,7 @@ namespace SlimMath {
             result = r;
         }
 
+        [ReplaceMethodNative]
         public static void Multiply(ref Matrix left, ref Matrix right, out Matrix result) {
             Matrix r;
             r.M11 = (left.M11 * right.M11) + (left.M12 * right.M21) + (left.M13 * right.M31) + (left.M14 * right.M41);
