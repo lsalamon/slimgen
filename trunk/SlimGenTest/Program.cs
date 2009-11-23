@@ -10,7 +10,7 @@ namespace SlimGenTest
     {
         static void Main(string[] args)
         {
-            var left = new Vector4{X = 1, Y = 2, Z = 3, W = 4};
+            var left = new Vector4 { X = 1, Y = 2, Z = 3, W = 4 };
             var right = new Vector4 { X = 5, Y = 6, Z = 7, W = 8 };
 
             float result;
@@ -20,11 +20,13 @@ namespace SlimGenTest
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    struct Vector4 {
+    struct Vector4
+    {
         public float X, Y, Z, W;
 
-        public static void DotProduct(ref Vector4 left, ref Vector4 right, out float result) {
-            result = (float)Math.Sqrt(left.X*right.X + left.Y*right.Y + left.Z*right.Z + left.W*right.W);
+        public static void DotProduct(ref Vector4 left, ref Vector4 right, out float result)
+        {
+            result = left.X * right.X + left.Y * right.Y + left.Z * right.Z + left.W * right.W;
         }
     }
 }
