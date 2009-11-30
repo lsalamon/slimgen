@@ -130,7 +130,7 @@ namespace SlimGen {
 			case ELEMENT_TYPE_U4: return L"uint";
 			case ELEMENT_TYPE_I8: return L"long";
 			case ELEMENT_TYPE_U8: return L"ulong";
-			case ELEMENT_TYPE_R4: return L"float32";
+			case ELEMENT_TYPE_R4: return L"float";
 			case ELEMENT_TYPE_R8: return L"double";
 			case ELEMENT_TYPE_STRING: return L"string";
 				MAKE_CASE(ELEMENT_TYPE_PTR)
