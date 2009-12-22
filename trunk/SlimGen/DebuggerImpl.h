@@ -129,7 +129,7 @@ namespace SlimGen {
 		HRESULT STDMETHODCALLTYPE DebuggerError( 
 			ICorDebugProcess *pProcess,
 			HRESULT errorHR,
-			DWORD errorCode) { std::wcout<<"ENTERED: "<<__FUNCTION__<<std::endl; return S_OK; }
+			DWORD errorCode) { return S_OK; }
 
 		HRESULT STDMETHODCALLTYPE LogMessage( 
 			ICorDebugAppDomain *pAppDomain,

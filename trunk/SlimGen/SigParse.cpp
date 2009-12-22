@@ -81,6 +81,8 @@ Number ::= 29-bit-encoded-integer
 
 */
 
+#include "stdafx.h"
+
 #include "SigParse.h"
 
 namespace SlimGen {

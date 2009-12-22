@@ -19,28 +19,36 @@
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 * THE SOFTWARE.
 */
-
 #pragma once
 
-#include <windows.h>
+#include "stdafx.h"
+
+#include "SigFormat.h"
+#include "Debugger.h"
+#include "Handle.h"
 
 namespace SlimGen {
-	class Handle {
+	class RuntimeMethodReplacer {
 	public:
-		Handle() : handle(0) {}
-		Handle(HANDLE handle) : handle(handle) {}
+		RuntimeMethodReplacer();
 
-		~Handle() {
-			if(handle)
-				CloseHandle(handle);
-		}
+		void Run(std::wstring const& process, std::wstring& arguments) ;
 
-		operator HANDLE&() { return handle; }
+		void AddAssembly(std::wstring const& assembly);
+		void AddSignature(std::wstring const& sig);
+		void AddSignatureInstructionSet(std::wstring const& sig, std::pair<std::wstring, std::wstring> const& instructionSet);
 
-		void Reset(HANDLE newValue = 0) { handle = newValue; }
 	private:
-		Handle(Handle const& other) {}
-		void operator=(Handle const& other) const;
-		HANDLE handle;
+		bool VisitAssemblyHandler(ICorDebugAssembly* assembly, std::wstring const& name);
+		void VisitFunctionHandler(ICorDebugFunction* function, std::wstring const& signature) ;
+		bool VisitTypeHandler(std::wstring const& name) ;
+		void VisitDoneProcessing(ICorDebugAppDomain* appDomain);
+	private:
+		Handle waitForSlimGen;
+		std::vector<std::wstring> assemblies;
+		std::vector<std::wstring> signatures;
+		std::map<std::wstring, std::vector<std::pair<std::wstring, std::wstring> > > signatureToInstructionSets;
+		Debugger debuggerCallback;
+		CComPtr<ICorDebugProcess> debugProcess;
 	};
 }

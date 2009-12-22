@@ -20,14 +20,7 @@
 * THE SOFTWARE.
 */
 
-#include <cor.h>
-#include <cordebug.h>
-#include <MSCorEE.h>
-
-#include <string>
-#include <iostream>
-#include <vector>
-#include <set>
+#include "stdafx.h"
 
 #include "SigFormat.h"
 #include "Debugger.h"
@@ -131,6 +124,10 @@ namespace SlimGen {
 		}
 		assemblyEnum->Release();
 		appDomain->Continue(FALSE);
+
+		if(!visitDoneParsing.empty())
+			visitDoneParsing(appDomain);
+
 		return S_OK;
 	}
 

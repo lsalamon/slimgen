@@ -47,6 +47,10 @@ namespace SlimGen {
 		void SetFunctionHandler(boost::function<void (ICorDebugFunction* function, std::wstring const& signature)> const& handler) {
 			visitFunctionHandler = handler;
 		}
+
+		void SetDoneProcessing(boost::function<void (ICorDebugAppDomain* appDomain)> const& handler) {
+			visitDoneParsing = handler;
+		}
 	private:
 		std::wstring GetMethodNameFromDef( IMetaDataImport2* metadata, mdMethodDef methodDef);
 		std::wstring GetTypeNameFromDef( IMetaDataImport2* metadata, mdTypeDef typeDef);
@@ -55,6 +59,7 @@ namespace SlimGen {
 		boost::function<bool (ICorDebugModule*, std::wstring const&)> visitModuleHandler;
 		boost::function<void (ICorDebugFunction* function, std::wstring const& signature)> visitFunctionHandler;
 		boost::function<bool (std::wstring const&)> visitTypeHandler;
+		boost::function<void (ICorDebugAppDomain* appDomain)> visitDoneParsing;
 
 		std::vector<ICorDebugModule*> modules;
 		std::vector<ICorDebugAssembly*> assemblies;

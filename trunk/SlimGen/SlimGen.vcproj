@@ -49,7 +49,7 @@
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
 				DisableLanguageExtensions="false"
-				UsePrecompiledHeader="0"
+				UsePrecompiledHeader="1"
 				WarningLevel="3"
 				DebugInformationFormat="4"
 			/>
@@ -334,6 +334,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\RuntimeMethodReplacer.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\SigParse.cpp"
 				>
 			</File>
@@ -368,11 +372,19 @@
 				>
 			</File>
 			<File
+				RelativePath=".\RuntimeMethodReplacer.h"
+				>
+			</File>
+			<File
 				RelativePath=".\SigFormat.h"
 				>
 			</File>
 			<File
 				RelativePath=".\SigParse.h"
+				>
+			</File>
+			<File
+				RelativePath=".\stdafx.h"
 				>
 			</File>
 			<File
