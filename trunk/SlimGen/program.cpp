@@ -1,145 +1,188 @@
+/*
+* Copyright (c) 2007-2009 SlimGen Group
+* 
+* Permission is hereby granted, free of charge, to any person obtaining a copy
+* of this software and associated documentation files (the "Software"), to deal
+* in the Software without restriction, including without limitation the rights
+* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+* copies of the Software, and to permit persons to whom the Software is
+* furnished to do so, subject to the following conditions:
+* 
+* The above copyright notice and this permission notice shall be included in
+* all copies or substantial portions of the Software.
+* 
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+* THE SOFTWARE.
+*/
+
+#include <windows.h>
 #include <cor.h>
 #include <cordebug.h>
 #include <MSCorEE.h>
+#include <atlbase.h>
 
 #include <string>
 #include <iostream>
 #include <vector>
+#include <set>
+#include <map>
 
-#include "DebuggerImpl.h"
 #include "SigFormat.h"
+#include "Debugger.h"
+#include "Handle.h"
 
 namespace SlimGen {
-	class Debugger : public DebuggerImpl {
+	class RuntimeMethodReplacer {
 	public:
-		HRESULT STDMETHODCALLTYPE Debugger::CreateAppDomain( ICorDebugProcess *pProcess, ICorDebugAppDomain *pAppDomain )
-		{
-			pAppDomain->Attach();
-			pProcess->Continue(FALSE);
-			return S_OK;
+		RuntimeMethodReplacer() {
+			debuggerCallback.SetAssemblyHandler(boost::bind(boost::mem_fn(&RuntimeMethodReplacer::VisitAssemblyHandler), this, _1, _2));
+			debuggerCallback.SetFunctionHandler(boost::bind(boost::mem_fn(&RuntimeMethodReplacer::VisitFunctionHandler), this, _1, _2));
+			debuggerCallback.SetTypeHandler(boost::bind(boost::mem_fn(&RuntimeMethodReplacer::VisitTypeHandler), this, _1));
 		}
 
-		HRESULT STDMETHODCALLTYPE LoadModule(ICorDebugAppDomain *pAppDomain, ICorDebugModule *pModule) {
-			std::wstring name = GetName(pModule);
-			std::wcout<<L"Module: "<<name<<std::endl;
-			if(name.find(L"SlimGenTest") != name.npos)
-				modules.push_back(pModule);
+		void Run(std::wstring const& process, std::wstring& arguments) {
+			if(FAILED(CoInitialize(0)))
+				throw std::runtime_error("Unable to initialize COM.");
 
-			pAppDomain->Continue(FALSE);
-			return S_OK;
+			std::wstring version = GetRuntimeVersionFromFile(process);
+
+			CComPtr<ICorDebug> corDebug;
+			if(FAILED(CreateDebuggingInterfaceFromVersion(CorDebugLatestVersion, version.c_str(), reinterpret_cast<IUnknown**>(&corDebug.p))))
+				throw std::runtime_error("Unable to create debugging interface from version.");
+
+			if(FAILED(corDebug->Initialize()))
+				throw std::runtime_error("Unable to initialize debugging interface.");
+
+			if(FAILED(corDebug->SetManagedHandler(&debuggerCallback)))
+				throw std::runtime_error("Unable to set managed debugger callback.");
+
+			STARTUPINFO si = { sizeof(STARTUPINFO), 0};
+			PROCESS_INFORMATION pi;
+
+			if(FAILED(corDebug->CreateProcess(process.c_str(), &arguments[0], 0, 0, FALSE, 0, 0, 0, &si, &pi, DEBUG_NO_SPECIAL_OPTIONS, &debugProcess.p)))
+				throw std::runtime_error("Unable to create process for debugging.");
+
+			debuggerCallback.WaitForDebuggingToFinish();
+			corDebug->Terminate();
+
+			CoUninitialize();
 		}
 
-		HRESULT STDMETHODCALLTYPE Break(ICorDebugAppDomain* appDomain, ICorDebugThread* thread) {
-			for(std::size_t i = 0; i < modules.size(); ++i) {
-				IMetaDataImport2* meta;
-				modules[i]->GetMetaDataInterface(IID_IMetaDataImport2, reinterpret_cast<IUnknown**>(&meta));
-				HCORENUM typeEnum = 0;
-				mdTypeDef types[256];
-				ULONG typeCount;
-				meta->EnumTypeDefs(&typeEnum, types, 256, &typeCount);
-				for(ULONG j = 0; j < typeCount; ++j) {
-					HCORENUM methodEnum = 0;
-					mdMethodDef methods[256];
-					ULONG methodCount;
-					meta->EnumMethodsWithName(&methodEnum, types[j], L"DotProduct", methods, 256, &methodCount);
-					if(methodCount > 0) {
-						ICorDebugFunction* function;
-						std::wstring methodName;
-						methodName = GetMethodNameFromDef(meta, methods[0]);
-						std::wcout<<methodName<<std::endl;
-						modules[i]->GetFunctionFromToken(methods[0], &function);
-						ICorDebugCode* code;
-						function->GetNativeCode(&code);
-						ICorDebugCode2* code2;
-						code->QueryInterface(IID_ICorDebugCode2, reinterpret_cast<void**>(&code2));
-						CodeChunkInfo chunks[256];
-						ULONG32 chunkLen = 256;
-						code2->GetCodeChunks(chunkLen, &chunkLen, chunks);
-						code->Release();
-						function->Release();
-					}
-					meta->CloseEnum(methodEnum);
-				}
-				meta->CloseEnum(typeEnum);
-				meta->Release();
-			}
-
-			appDomain->Continue(FALSE);
-			return S_OK;
+		void AddAssembly(std::wstring const& assembly) { assemblies.push_back(assembly); }
+		void AddSignature(std::wstring const& sig) { signatures.push_back(sig); }
+		void AddSignatureInstructionSet(std::wstring const& sig, std::pair<std::wstring, std::wstring> const& instructionSet) {
+			signatureToInstructionSets[sig].push_back(instructionSet);
 		}
 
 	private:
-		template<class T> std::wstring GetName(T* ptr) {
-			ULONG32 nameLen = 0;
-			ptr->GetName(nameLen, &nameLen, 0);
-			std::wstring name(nameLen, 0);
-			ptr->GetName(nameLen, &nameLen, &name[0]);
-			return name;
+		bool VisitAssemblyHandler(ICorDebugAssembly* assembly, std::wstring const& name) {
+			for(std::size_t i = 0; i < assemblies.size(); ++i) {
+				if(name.find(assemblies[i]) != name.npos) {
+					return true;
+				}
+			}
+			return false;
 		}
 
-		std::wstring GetMethodNameFromDef( IMetaDataImport2* metadata, mdMethodDef methodDef)
-		{
-			ULONG methodNameLength;
-			PCCOR_SIGNATURE signature;
-			ULONG signatureLength;
-			metadata->GetMethodProps(methodDef, 0, 0, 0, &methodNameLength, 0, 0, 0, 0, 0);
-			std::wstring methodName(methodNameLength, 0);
-			std::wstring signatureStr;
-			metadata->GetMethodProps(methodDef, 0, &methodName[0], methodName.length(), &methodNameLength, 0, &signature, &signatureLength, 0, 0);
-			wchar_t sigStr[2048];
-			SigFormat formatter(sigStr, 2048, methodDef, metadata, metadata);
-			formatter.Parse(static_cast<sig_byte const*>(signature), signatureLength);
-			signatureStr = sigStr;
-			return (methodName.substr(0, methodName.length() - 1) + signatureStr);
+		void VisitFunctionHandler(ICorDebugFunction* function, std::wstring const& signature) {
+			for(std::size_t i = 0; i < signatures.size(); ++i) {
+				if(signature == signatures[i]) {
+					CComPtr<ICorDebugCode> codePtr;
+					function->GetNativeCode(&codePtr.p);
+					CComQIPtr<ICorDebugCode2> code2Ptr(codePtr);
+					CodeChunkInfo cci;
+					ULONG32 len = 1;
+					code2Ptr->GetCodeChunks(len, &len, &cci);
+
+					std::vector<std::pair<std::wstring, std::wstring> >& instructionSets = signatureToInstructionSets[signature];
+					for(std::size_t j = 0; j < instructionSets.size(); ++j) {
+						Handle fileHandle(CreateFile(instructionSets[j].second.c_str(), GENERIC_READ, 0, 0, OPEN_EXISTING, 0, 0));
+						DWORD len = GetFileSize(fileHandle, 0);
+						if(len > cci.length)
+							return;
+						std::vector<BYTE> fileData(len);
+						debugProcess->ReadMemory(cci.startAddr, len, &fileData.front(), &len); 
+						ReadFile(fileHandle, &fileData.front(), len, &len, 0);
+						debugProcess->WriteMemory(cci.startAddr, len, &fileData.front(), &len);
+						fileData = std::vector<BYTE>(len);
+						debugProcess->ReadMemory(cci.startAddr, len, &fileData.front(), &len); 
+					}
+				}
+			}
 		}
 
-		std::vector<ICorDebugModule*> modules;
+		bool VisitTypeHandler(std::wstring const& name) {
+			return true;
+		}
+	private:
+		std::vector<std::wstring> assemblies;
+		std::vector<std::wstring> signatures;
+		std::map<std::wstring, std::vector<std::pair<std::wstring, std::wstring> > > signatureToInstructionSets;
+		Debugger debuggerCallback;
+		CComPtr<ICorDebugProcess> debugProcess;
 	};
-
-	std::wstring GetRuntimeVersionFromFile(std::wstring const& filename) {
-		DWORD len;
-		std::wstring tmpFilename = filename;
-		GetRequestedRuntimeVersion(&tmpFilename[0], 0, 0, &len);
-		std::wstring version(len, 0);
-		if(FAILED(GetRequestedRuntimeVersion(&tmpFilename[0], &version[0], len, &len)))
-			throw std::runtime_error("unable to get version from process.");
-		return version;
-	}
 }
 
+#include <sstream>
+#include "tinyxml.h"
 
-
-int wmain(int argc, wchar_t* argv) {
-	CoInitialize(0);
-	std::wstring processName = L"SlimGenTest.exe";
-	std::wstring commandLine = L"SlimGenTest.exe";
-	std::wstring version = SlimGen::GetRuntimeVersionFromFile(processName);
-
-	ICorDebug* corDebug;
-	CreateDebuggingInterfaceFromVersion(CorDebugLatestVersion, version.c_str(), reinterpret_cast<IUnknown**>(&corDebug));
-
-	if(FAILED(corDebug->Initialize())) {
-		std::wcout<<"Failed - Initialize";
-		corDebug->Release();
+int wmain(int argc, wchar_t** argv) {
+	if(argc < 3)
 		return 0;
-	}
-	SlimGen::Debugger debugger;
-	if(FAILED(corDebug->SetManagedHandler(&debugger))) {
-		std::wcout<<"Failed - SetManagedHandler";
-		corDebug->Release();
-		return 0;
+
+	std::wstringstream ss;
+	for(int argumentIndex = 3; argumentIndex < argc; ++argumentIndex) {
+		ss<<argv[argumentIndex]<<" ";
 	}
 
-	STARTUPINFO info = {sizeof(STARTUPINFO), 0};
-	PROCESS_INFORMATION pi;
-	ICorDebugProcess* debugProcess;
-	if(FAILED(corDebug->CreateProcessW(processName.c_str(), &commandLine[0], 0, 0, FALSE, 0, 0, 0, &info, &pi, DEBUG_NO_SPECIAL_OPTIONS, &debugProcess))) {
-		std::wcout<<"Failed - CreateProcessW";
-		corDebug->Release();
-		return 0;
+	std::wstring arguments = ss.str();
+	std::wstring configFile = argv[1];
+	std::wstring process = argv[2];
+
+	SlimGen::RuntimeMethodReplacer rmr;
+
+	std::string fileName(configFile.begin(), configFile.end());
+	TiXmlDocument config(fileName);
+
+	config.LoadFile();
+	TiXmlHandle configHandle(&config);
+	TiXmlHandle root = configHandle.FirstChildElement("slimGen");
+	TiXmlElement* assembly = root.FirstChild("assembly").ToElement();
+
+	for(; assembly; assembly = assembly->NextSiblingElement()) {
+		std::string value = assembly->Attribute("name");
+		rmr.AddAssembly(std::wstring(value.begin(), value.end()));
+
+		TiXmlHandle assemblyHandle = assembly;
+		TiXmlElement* platform = assembly->FirstChildElement("platform");
+		for(; platform; platform = platform->NextSiblingElement()) {
+			std::string platformName = platform->Attribute("name");
+#ifndef _M_X64
+			if(platformName == "x86") {
+#else
+			if(platformName == "x64") {
+#endif
+				TiXmlElement* method = platform->FirstChildElement("method");
+				for(; method; method = method->NextSiblingElement()) {
+					std::string signature = method->Attribute("name");
+					rmr.AddSignature(std::wstring(signature.begin(), signature.end()));
+
+					TiXmlElement* instructionSet = method->FirstChildElement("instructionSet");
+					for(; instructionSet; instructionSet = instructionSet->NextSiblingElement()) {
+						std::string instructionSetName = instructionSet->Attribute("name");
+						std::string bin = instructionSet->Attribute("bin");
+						rmr.AddSignatureInstructionSet(std::wstring(signature.begin(), signature.end()), std::make_pair(std::wstring(instructionSetName.begin(), instructionSetName.end()), std::wstring(bin.begin(), bin.end())));
+					}
+				}
+			}
+		}
 	}
-	debugger.WaitForDebuggingToFinish();
-	corDebug->Terminate();
-	corDebug->Release();
+	
+	rmr.Run(process, arguments);
 	return 0;
 }

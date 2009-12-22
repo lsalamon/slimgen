@@ -23,7 +23,7 @@
 #pragma once
 
 #ifdef _DEBUG
-#define DEBUG_PRINT_ENTER std::wcout<<"ENTERED: "<<__FUNCTION__<<std::endl;
+#define DEBUG_PRINT_ENTER //std::wcout<<"ENTERED: "<<__FUNCTION__<<std::endl;
 #else
 #define DEBUG_PRINT_ENTER
 #endif
@@ -64,175 +64,175 @@ namespace SlimGen {
 		HRESULT STDMETHODCALLTYPE Breakpoint( 
 			ICorDebugAppDomain *pAppDomain,
 			ICorDebugThread *pThread,
-			ICorDebugBreakpoint *pBreakpoint) CONTINUE_IMPL(pAppDomain)
+			ICorDebugBreakpoint *pBreakpoint) CONTINUE_IMPL(pAppDomain);
 
-			HRESULT STDMETHODCALLTYPE StepComplete( 
+		HRESULT STDMETHODCALLTYPE StepComplete( 
 			ICorDebugAppDomain *pAppDomain,
 			ICorDebugThread *pThread,
 			ICorDebugStepper *pStepper,
-			CorDebugStepReason reason) CONTINUE_IMPL(pAppDomain)
+			CorDebugStepReason reason) CONTINUE_IMPL(pAppDomain);
 
-			HRESULT STDMETHODCALLTYPE Break( 
+		HRESULT STDMETHODCALLTYPE Break( 
 			ICorDebugAppDomain *pAppDomain,
-			ICorDebugThread *thread) CONTINUE_IMPL(pAppDomain)
+			ICorDebugThread *thread) CONTINUE_IMPL(pAppDomain);;
 
-			HRESULT STDMETHODCALLTYPE Exception( 
-			ICorDebugAppDomain *pAppDomain,
-			ICorDebugThread *pThread,
-			BOOL unhandled) CONTINUE_IMPL(pAppDomain)
-
-			HRESULT STDMETHODCALLTYPE EvalComplete( 
+		HRESULT STDMETHODCALLTYPE Exception( 
 			ICorDebugAppDomain *pAppDomain,
 			ICorDebugThread *pThread,
-			ICorDebugEval *pEval) CONTINUE_IMPL(pAppDomain)
+			BOOL unhandled) CONTINUE_IMPL(pAppDomain);
 
-			HRESULT STDMETHODCALLTYPE EvalException( 
+		HRESULT STDMETHODCALLTYPE EvalComplete( 
 			ICorDebugAppDomain *pAppDomain,
 			ICorDebugThread *pThread,
-			ICorDebugEval *pEval) CONTINUE_IMPL(pAppDomain)
+			ICorDebugEval *pEval) CONTINUE_IMPL(pAppDomain);
 
-			HRESULT STDMETHODCALLTYPE CreateProcess( 
-			ICorDebugProcess *pProcess) CONTINUE_IMPL(pProcess)
+		HRESULT STDMETHODCALLTYPE EvalException( 
+			ICorDebugAppDomain *pAppDomain,
+			ICorDebugThread *pThread,
+			ICorDebugEval *pEval) CONTINUE_IMPL(pAppDomain);
 
-			HRESULT STDMETHODCALLTYPE ExitProcess( 
+		HRESULT STDMETHODCALLTYPE CreateProcess( 
+			ICorDebugProcess *pProcess) CONTINUE_IMPL(pProcess);
+
+		HRESULT STDMETHODCALLTYPE ExitProcess( 
 			ICorDebugProcess *pProcess) {
 				DEBUG_PRINT_ENTER
-				SetEvent(debug);
+					SetEvent(debug);
 				//pProcess->Detach();
 				return S_OK;
 		}
 
 		HRESULT STDMETHODCALLTYPE CreateThread( 
 			ICorDebugAppDomain *pAppDomain,
-			ICorDebugThread *thread) CONTINUE_IMPL(pAppDomain)
+			ICorDebugThread *thread) CONTINUE_IMPL(pAppDomain);
 
-			HRESULT STDMETHODCALLTYPE ExitThread( 
+		HRESULT STDMETHODCALLTYPE ExitThread( 
 			ICorDebugAppDomain *pAppDomain,
-			ICorDebugThread *thread) CONTINUE_IMPL(pAppDomain)
+			ICorDebugThread *thread) CONTINUE_IMPL(pAppDomain);
 
-			HRESULT STDMETHODCALLTYPE LoadModule( 
+		HRESULT STDMETHODCALLTYPE LoadModule( 
 			ICorDebugAppDomain *pAppDomain,
-			ICorDebugModule *pModule) CONTINUE_IMPL(pAppDomain)
+			ICorDebugModule *pModule) CONTINUE_IMPL(pAppDomain);
 
-			HRESULT STDMETHODCALLTYPE UnloadModule( 
+		HRESULT STDMETHODCALLTYPE UnloadModule( 
 			ICorDebugAppDomain *pAppDomain,
-			ICorDebugModule *pModule) CONTINUE_IMPL(pAppDomain)
+			ICorDebugModule *pModule) CONTINUE_IMPL(pAppDomain);
 
-			HRESULT STDMETHODCALLTYPE LoadClass( 
+		HRESULT STDMETHODCALLTYPE LoadClass( 
 			ICorDebugAppDomain *pAppDomain,
-			ICorDebugClass *c) CONTINUE_IMPL(pAppDomain)
+			ICorDebugClass *c) CONTINUE_IMPL(pAppDomain);
 
-			HRESULT STDMETHODCALLTYPE UnloadClass( 
+		HRESULT STDMETHODCALLTYPE UnloadClass( 
 			ICorDebugAppDomain *pAppDomain,
-			ICorDebugClass *c) CONTINUE_IMPL(pAppDomain)
+			ICorDebugClass *c) CONTINUE_IMPL(pAppDomain);
 
-			HRESULT STDMETHODCALLTYPE DebuggerError( 
+		HRESULT STDMETHODCALLTYPE DebuggerError( 
 			ICorDebugProcess *pProcess,
 			HRESULT errorHR,
 			DWORD errorCode) { std::wcout<<"ENTERED: "<<__FUNCTION__<<std::endl; return S_OK; }
 
-			HRESULT STDMETHODCALLTYPE LogMessage( 
+		HRESULT STDMETHODCALLTYPE LogMessage( 
 			ICorDebugAppDomain *pAppDomain,
 			ICorDebugThread *pThread,
 			LONG lLevel,
 			WCHAR *pLogSwitchName,
-			WCHAR *pMessage) CONTINUE_IMPL(pAppDomain)
+			WCHAR *pMessage) CONTINUE_IMPL(pAppDomain);
 
-			HRESULT STDMETHODCALLTYPE LogSwitch( 
+		HRESULT STDMETHODCALLTYPE LogSwitch( 
 			ICorDebugAppDomain *pAppDomain,
 			ICorDebugThread *pThread,
 			LONG lLevel,
 			ULONG ulReason,
 			WCHAR *pLogSwitchName,
-			WCHAR *pParentName) CONTINUE_IMPL(pAppDomain)
+			WCHAR *pParentName) CONTINUE_IMPL(pAppDomain);
 
-			HRESULT STDMETHODCALLTYPE CreateAppDomain( 
+		HRESULT STDMETHODCALLTYPE CreateAppDomain( 
 			ICorDebugProcess *pProcess,
-			ICorDebugAppDomain *pAppDomain) CONTINUE_IMPL(pAppDomain)
+			ICorDebugAppDomain *pAppDomain) CONTINUE_IMPL(pAppDomain);
 
-			HRESULT STDMETHODCALLTYPE ExitAppDomain( 
+		HRESULT STDMETHODCALLTYPE ExitAppDomain( 
 			ICorDebugProcess *pProcess,
-			ICorDebugAppDomain *pAppDomain) CONTINUE_IMPL(pAppDomain)
+			ICorDebugAppDomain *pAppDomain) CONTINUE_IMPL(pAppDomain);
 
-			HRESULT STDMETHODCALLTYPE LoadAssembly( 
+		HRESULT STDMETHODCALLTYPE LoadAssembly( 
 			ICorDebugAppDomain *pAppDomain,
-			ICorDebugAssembly *pAssembly) CONTINUE_IMPL(pAppDomain)
+			ICorDebugAssembly *pAssembly) CONTINUE_IMPL(pAppDomain);
 
-			HRESULT STDMETHODCALLTYPE UnloadAssembly( 
+		HRESULT STDMETHODCALLTYPE UnloadAssembly( 
 			ICorDebugAppDomain *pAppDomain,
-			ICorDebugAssembly *pAssembly) CONTINUE_IMPL(pAppDomain)
+			ICorDebugAssembly *pAssembly) CONTINUE_IMPL(pAppDomain);
 
-			HRESULT STDMETHODCALLTYPE ControlCTrap( 
-			ICorDebugProcess *pProcess) CONTINUE_IMPL(pProcess)
+		HRESULT STDMETHODCALLTYPE ControlCTrap( 
+			ICorDebugProcess *pProcess) CONTINUE_IMPL(pProcess);
 
-			HRESULT STDMETHODCALLTYPE NameChange( 
+		HRESULT STDMETHODCALLTYPE NameChange( 
 			ICorDebugAppDomain *pAppDomain,
-			ICorDebugThread *pThread) CONTINUE_IMPL(pAppDomain)
+			ICorDebugThread *pThread) CONTINUE_IMPL(pAppDomain);
 
-			HRESULT STDMETHODCALLTYPE UpdateModuleSymbols( 
+		HRESULT STDMETHODCALLTYPE UpdateModuleSymbols( 
 			ICorDebugAppDomain *pAppDomain,
 			ICorDebugModule *pModule,
-			IStream *pSymbolStream) CONTINUE_IMPL(pAppDomain)
+			IStream *pSymbolStream) CONTINUE_IMPL(pAppDomain);
 
-			HRESULT STDMETHODCALLTYPE EditAndContinueRemap( 
+		HRESULT STDMETHODCALLTYPE EditAndContinueRemap( 
 			ICorDebugAppDomain *pAppDomain,
 			ICorDebugThread *pThread,
 			ICorDebugFunction *pFunction,
-			BOOL fAccurate) CONTINUE_IMPL(pAppDomain)
+			BOOL fAccurate) CONTINUE_IMPL(pAppDomain);
 
-			HRESULT STDMETHODCALLTYPE BreakpointSetError( 
+		HRESULT STDMETHODCALLTYPE BreakpointSetError( 
 			ICorDebugAppDomain *pAppDomain,
 			ICorDebugThread *pThread,
 			ICorDebugBreakpoint *pBreakpoint,
-			DWORD dwError) CONTINUE_IMPL(pAppDomain)
+			DWORD dwError) CONTINUE_IMPL(pAppDomain);
 
-			HRESULT STDMETHODCALLTYPE FunctionRemapOpportunity( 
+		HRESULT STDMETHODCALLTYPE FunctionRemapOpportunity( 
 			ICorDebugAppDomain *pAppDomain,
 			ICorDebugThread *pThread,
 			ICorDebugFunction *pOldFunction,
 			ICorDebugFunction *pNewFunction,
-			ULONG32 oldILOffset) CONTINUE_IMPL(pAppDomain)
+			ULONG32 oldILOffset) CONTINUE_IMPL(pAppDomain);
 
-			HRESULT STDMETHODCALLTYPE CreateConnection( 
+		HRESULT STDMETHODCALLTYPE CreateConnection( 
 			ICorDebugProcess *pProcess,
 			CONNID dwConnectionId,
-			WCHAR *pConnName) CONTINUE_IMPL(pProcess)
+			WCHAR *pConnName) CONTINUE_IMPL(pProcess);
 
-			HRESULT STDMETHODCALLTYPE ChangeConnection( 
+		HRESULT STDMETHODCALLTYPE ChangeConnection( 
 			ICorDebugProcess *pProcess,
-			CONNID dwConnectionId) CONTINUE_IMPL(pProcess)
+			CONNID dwConnectionId) CONTINUE_IMPL(pProcess);
 
-			HRESULT STDMETHODCALLTYPE DestroyConnection( 
+		HRESULT STDMETHODCALLTYPE DestroyConnection( 
 			ICorDebugProcess *pProcess,
-			CONNID dwConnectionId) CONTINUE_IMPL(pProcess)
+			CONNID dwConnectionId) CONTINUE_IMPL(pProcess);
 
-			HRESULT STDMETHODCALLTYPE Exception( 
+		HRESULT STDMETHODCALLTYPE Exception( 
 			ICorDebugAppDomain *pAppDomain,
 			ICorDebugThread *pThread,
 			ICorDebugFrame *pFrame,
 			ULONG32 nOffset,
 			CorDebugExceptionCallbackType dwEventType,
-			DWORD dwFlags) CONTINUE_IMPL(pAppDomain)
+			DWORD dwFlags) CONTINUE_IMPL(pAppDomain);
 
-			HRESULT STDMETHODCALLTYPE ExceptionUnwind( 
+		HRESULT STDMETHODCALLTYPE ExceptionUnwind( 
 			ICorDebugAppDomain *pAppDomain,
 			ICorDebugThread *pThread,
 			CorDebugExceptionUnwindCallbackType dwEventType,
-			DWORD dwFlags) CONTINUE_IMPL(pAppDomain)
+			DWORD dwFlags) CONTINUE_IMPL(pAppDomain);
 
-			HRESULT STDMETHODCALLTYPE FunctionRemapComplete( 
+		HRESULT STDMETHODCALLTYPE FunctionRemapComplete( 
 			ICorDebugAppDomain *pAppDomain,
 			ICorDebugThread *pThread,
-			ICorDebugFunction *pFunction) CONTINUE_IMPL(pAppDomain)
+			ICorDebugFunction *pFunction) CONTINUE_IMPL(pAppDomain);
 
-			HRESULT STDMETHODCALLTYPE MDANotification( 
+		HRESULT STDMETHODCALLTYPE MDANotification( 
 			ICorDebugController *pController,
 			ICorDebugThread *pThread,
-			ICorDebugMDA *pMDA) CONTINUE_IMPL(pController)
+			ICorDebugMDA *pMDA) CONTINUE_IMPL(pController);
 
-			void WaitForDebuggingToFinish() {
-				WaitForSingleObject (debug, INFINITE);
-			}
+		void WaitForDebuggingToFinish() {
+			WaitForSingleObject (debug, INFINITE);
+		}
 	private:
 		HANDLE debug;
 		ULONG refCount;

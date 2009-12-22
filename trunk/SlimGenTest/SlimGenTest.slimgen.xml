@@ -1,0 +1,10 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<slimGen>
+  <assembly name="SlimGenTest.exe">
+    <platform name="x86">
+      <method name="DotProduct(ref SlimGenTest.Vector4, ref SlimGenTest.Vector4, ref float)">
+        <instructionSet name="sse3" bin="dp.sse3.x86" source="dp.sse3.x86.asm"/>
+      </method>
+    </platform>
+  </assembly>
+</slimGen>
