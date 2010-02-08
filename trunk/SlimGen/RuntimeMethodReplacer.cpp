@@ -95,11 +95,9 @@ namespace SlimGen {
 					if(len > cci.length)
 						return;
 					std::vector<BYTE> fileData(len);
-					debugProcess->ReadMemory(cci.startAddr, len, &fileData.front(), &len); 
+					SIZE_T len64Size = len;
 					ReadFile(fileHandle, &fileData.front(), len, &len, 0);
-					debugProcess->WriteMemory(cci.startAddr, len, &fileData.front(), &len);
-					fileData = std::vector<BYTE>(len);
-					debugProcess->ReadMemory(cci.startAddr, len, &fileData.front(), &len); 
+					debugProcess->WriteMemory(cci.startAddr, len64Size, &fileData.front(), &len);
 				}
 			}
 		}
