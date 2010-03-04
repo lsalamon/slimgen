@@ -3,7 +3,9 @@
   <assembly name="SlimGenTest.exe">
     <platform name="x86">
       <method name="DotProduct(ref SlimGenTest.Vector4, ref SlimGenTest.Vector4, ref float)">
-        <instructionSet name="sse3" bin="dp.sse3.x86" source="dp.sse3.x86.asm"/>
+        <instructionSet name="SSE3" bin="dp.sse3.x86" source="dp.sse3.x86.asm"/>
+        <instructionSet name="SSE42" bin="dp.sse3.x86" source="dp.sse3.x86.asm"/>
+        <instructionSet name="SSE2" bin="dp.sse3.x86" source="dp.sse3.x86.asm"/>
       </method>
     </platform>
   </assembly>

@@ -122,7 +122,7 @@
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
-				UsePrecompiledHeader="0"
+				UsePrecompiledHeader="1"
 				WarningLevel="3"
 				DebugInformationFormat="3"
 			/>
@@ -195,7 +195,7 @@
 				PreprocessorDefinitions="TIXML_USE_STL"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
-				UsePrecompiledHeader="0"
+				UsePrecompiledHeader="1"
 				WarningLevel="3"
 				DebugInformationFormat="3"
 			/>
@@ -271,7 +271,7 @@
 				PreprocessorDefinitions="TIXML_USE_STL"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
-				UsePrecompiledHeader="0"
+				UsePrecompiledHeader="1"
 				WarningLevel="3"
 				DebugInformationFormat="3"
 			/>
@@ -326,6 +326,10 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
+				RelativePath=".\cpuid.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\Debugger.cpp"
 				>
 			</File>
@@ -346,6 +350,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\stdafx.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\tinyxml.cpp"
 				>
 			</File>
@@ -363,6 +371,10 @@
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
+			<File
+				RelativePath=".\cpuid.h"
+				>
+			</File>
 			<File
 				RelativePath=".\Debugger.h"
 				>

@@ -21,64 +21,43 @@
 */
 
 #include "stdafx.h"
+#include "SlimGenXml.h"
+#include "cpuid.h"
+#include <iostream>
 
-#include "RuntimeMethodReplacer.h"
-
-#include <sstream>
-#include "tinyxml.h"
-
-int wmain(int argc, wchar_t** argv) {
-	if(argc < 3)
+int main(int argc, char** argv) {
+	if(argc < 2)
 		return 0;
 
-	std::wstringstream ss;
-	for(int argumentIndex = 3; argumentIndex < argc; ++argumentIndex) {
-		ss<<argv[argumentIndex]<<" ";
-	}
+	std::string handleStr = argv[1];
+	std::string configFile = argv[2];
 
-	std::wstring arguments = ss.str();
-	std::wstring configFile = argv[1];
-	std::wstring process = argv[2];
 
-	SlimGen::RuntimeMethodReplacer rmr;
-
-	std::string fileName(configFile.begin(), configFile.end());
-	TiXmlDocument config(fileName);
-
-	config.LoadFile();
-	TiXmlHandle configHandle(&config);
-	TiXmlHandle root = configHandle.FirstChildElement("slimGen");
-	TiXmlElement* assembly = root.FirstChild("assembly").ToElement();
-
-	for(; assembly; assembly = assembly->NextSiblingElement()) {
-		std::string value = assembly->Attribute("name");
-		rmr.AddAssembly(std::wstring(value.begin(), value.end()));
-
-		TiXmlHandle assemblyHandle = assembly;
-		TiXmlElement* platform = assembly->FirstChildElement("platform");
-		for(; platform; platform = platform->NextSiblingElement()) {
-			std::string platformName = platform->Attribute("name");
-#ifndef _M_X64
-			if(platformName == "x86") {
-#else
-			if(platformName == "x64") {
-#endif
-				TiXmlElement* method = platform->FirstChildElement("method");
-				for(; method; method = method->NextSiblingElement()) {
-					std::string signature = method->Attribute("name");
-					rmr.AddSignature(std::wstring(signature.begin(), signature.end()));
-
-					TiXmlElement* instructionSet = method->FirstChildElement("instructionSet");
-					for(; instructionSet; instructionSet = instructionSet->NextSiblingElement()) {
-						std::string instructionSetName = instructionSet->Attribute("name");
-						std::string bin = instructionSet->Attribute("bin");
-						rmr.AddSignatureInstructionSet(std::wstring(signature.begin(), signature.end()), std::make_pair(std::wstring(instructionSetName.begin(), instructionSetName.end()), std::wstring(bin.begin(), bin.end())));
+	SlimGen::CPUFeatureSupport featureSupport = SlimGen::GetMaxCPUFeatureSupported();
+	SlimGen::SlimGenConfig config = SlimGen::LoadConfigurationFile(configFile);
+	
+	for(std::size_t i = 0; i < config.Assemblies.size(); ++i) {
+		std::wcout<<config.Assemblies[i].Name<<std::endl;
+		for(std::size_t j = 0; j < config.Assemblies[i].Platforms.size(); ++j) {
+			std::wcout<<L"  "<<config.Assemblies[i].Platforms[j].Name<<std::endl;
+			for(std::size_t k = 0; k < config.Assemblies[i].Platforms[j].Methods.size(); ++k) {
+				std::wcout<<L"    "<<config.Assemblies[i].Platforms[j].Methods[k].Name<<std::endl;
+				std::vector<SlimGen::InstructionSetNode>& instructionSets = config.Assemblies[i].Platforms[j].Methods[k].InstructionSets;
+				SlimGen::InstructionSetNode* best = 0;
+				for(std::vector<SlimGen::InstructionSetNode>::iterator l = instructionSets.begin(); l != instructionSets.end(); ++l) {
+					if(!best) {
+						if(featureSupport.FromName(l->Name))
+							best = &(*l);
+					} else {
+						if(SlimGen::ValueFromName(best->Name) < SlimGen::ValueFromName(l->Name) && featureSupport.FromName(l->Name))
+							best = &(*l);
 					}
+				}
+				if(best) {
+					std::wcout<<L"      "<<best->Name<<L" : "<<best->BinFilename<<std::endl;
 				}
 			}
 		}
 	}
-	
-	rmr.Run(process, arguments);
 	return 0;
 }
