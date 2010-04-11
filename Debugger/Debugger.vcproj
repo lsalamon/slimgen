@@ -46,7 +46,7 @@
 				AdditionalOptions="/MP"
 				Optimization="0"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
-				MinimalRebuild="true"
+				MinimalRebuild="false"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
 				UsePrecompiledHeader="2"
@@ -120,7 +120,7 @@
 				AdditionalOptions="/MP"
 				Optimization="0"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
-				MinimalRebuild="true"
+				MinimalRebuild="false"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
 				UsePrecompiledHeader="2"
@@ -195,6 +195,7 @@
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
+				MinimalRebuild="false"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="2"
@@ -272,6 +273,7 @@
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
+				MinimalRebuild="false"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="2"
@@ -348,6 +350,22 @@
 			</File>
 			<File
 				RelativePath=".\source\RuntimeMethodReplacer.h"
+				>
+			</File>
+		</Filter>
+		<Filter
+			Name="Signatures"
+			>
+			<File
+				RelativePath=".\source\SigFormat.h"
+				>
+			</File>
+			<File
+				RelativePath=".\source\SigParse.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\source\SigParse.h"
 				>
 			</File>
 		</Filter>
