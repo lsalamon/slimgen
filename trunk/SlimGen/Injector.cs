@@ -21,12 +21,11 @@
 */
 using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Diagnostics;
-using System.IO;
-using System.Threading;
-using System.Runtime.CompilerServices;
 using System.Globalization;
+using System.Runtime.CompilerServices;
+using System.Text;
+using System.Threading;
 
 namespace SlimGen
 {
@@ -56,6 +55,7 @@ namespace SlimGen
                 RuntimeHelpers.PrepareMethod(method.Method.MethodHandle);
                 method.GetBytes(data);
             }
+            data.AddRange(Encoding.ASCII.GetBytes("\n"));
 
             return Launch(debuggerPath, data.ToArray());
         }
