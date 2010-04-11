@@ -19,9 +19,36 @@
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 * THE SOFTWARE.
 */
-#include "stdafx.h"
+#pragma once
 
-int main(int argc, char** argv)
+#include "Debugger.h"
+#include "MethodReplacement.h"
+
+namespace SlimGen
 {
-	return 0;
+	class RuntimeMethodReplacer : private Debugger
+	{
+	public:
+		RuntimeMethodReplacer(const std::vector<MethodReplacement>& methods) : methods(methods) { }
+
+		void Run(int processId);
+
+	private:
+		HRESULT STDMETHODCALLTYPE CreateAppDomain(ICorDebugProcess *pProcess, ICorDebugAppDomain *pAppDomain);
+		HRESULT STDMETHODCALLTYPE Break(ICorDebugAppDomain* appDomain, ICorDebugThread* thread);
+
+		std::wstring GetMethodNameFromDef(IMetaDataImport2* metadata, mdMethodDef methodDef);
+		std::wstring GetTypeNameFromDef(IMetaDataImport2* metadata, mdTypeDef typeDef);
+
+		void ReplaceMethod(ICorDebugFunction* function, MethodReplacement method);
+		bool VisitAssemblyHandler(ICorDebugAssembly* assembly, const std::wstring& name);
+		void VisitFunctionHandler(ICorDebugFunction* function, const std::wstring& signature);
+
+		const std::vector<MethodReplacement>& methods;
+
+		Handle waitForSlimGen;
+		CComPtr<ICorDebugProcess> debugProcess;
+	};
+
+	std::wstring GetRuntimeVersion(int processId);
 }
