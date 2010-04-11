@@ -21,13 +21,12 @@
 */
 #pragma once
 
-#include <windows.h>
-#include <cor.h>
-#include <cordebug.h>
-#include <MSCorEE.h>
-#include <atlbase.h>
-
-#include <iostream>
-#include <string>
-#include <vector>
-#include <map>
+namespace SlimGen
+{
+	struct MethodReplacement
+	{
+		std::wstring Assembly;
+		std::wstring Method;
+		std::vector<std::vector<char>> CompiledData;
+	};
+}

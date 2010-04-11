@@ -33,14 +33,13 @@ namespace SlimGen
     {
         public int nLength;
         public IntPtr lpSecurityDescriptor;
-        [MarshalAs(UnmanagedType.Bool)]
-        public bool bInheritHandle;
+        public int bInheritHandle;
 
         public SECURITY_ATTRIBUTES(bool inherit)
         {
             nLength = Marshal.SizeOf(typeof(SECURITY_ATTRIBUTES));
             lpSecurityDescriptor = IntPtr.Zero;
-            bInheritHandle = inherit;
+            bInheritHandle = inherit ? 1 : 0;
         }
     }
 
@@ -50,5 +49,14 @@ namespace SlimGen
         [SuppressUnmanagedCodeSecurity]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static extern bool CreatePipe(out SafeFileHandle hReadPipe, out SafeFileHandle hWritePipe, ref SECURITY_ATTRIBUTES lpPipeAttributes, uint nSize);
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        [SuppressUnmanagedCodeSecurity]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool DuplicateHandle(IntPtr hSourceProcessHandle, SafeFileHandle hSourceHandle, IntPtr hTargetProcessHandle, out SafeFileHandle lpTargetHandle, uint dwDesiredAccess, [MarshalAs(UnmanagedType.Bool)] bool bInheritHandle, uint dwOptions);
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Auto)]
+        [SuppressUnmanagedCodeSecurity]
+        public static extern IntPtr GetCurrentProcess();
     }
 }

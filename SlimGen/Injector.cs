@@ -25,10 +25,12 @@ using System.Text;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
+using System.Runtime.CompilerServices;
+using System.Globalization;
 
 namespace SlimGen
 {
-    public static class SlimGen
+    public static class Injector
     {
         public static bool Replace(string debuggerPath, IEnumerable<MethodReplacement> methods)
         {
@@ -44,25 +46,27 @@ namespace SlimGen
 
             var data = new List<byte>();
             foreach (var method in methods)
+            {
+                RuntimeHelpers.PrepareMethod(method.Method.MethodHandle);
                 method.GetBytes(data);
+            }
 
             return Launch(debuggerPath, data.ToArray());
         }
 
         static bool Launch(string debuggerPath, byte[] data)
         {
-            using (var pipe = new AnonymousPipe())
             using (var process = new Process())
             {
-                process.StartInfo.Arguments = string.Format("{0}, {1}", pipe.ClientHandle, Process.GetCurrentProcess().Id);
-                process.StartInfo.CreateNoWindow = true;
+                process.StartInfo.Arguments = Process.GetCurrentProcess().Id.ToString(CultureInfo.InvariantCulture);
+                process.StartInfo.CreateNoWindow = false;
                 process.StartInfo.FileName = debuggerPath;
                 process.StartInfo.UseShellExecute = false;
+                process.StartInfo.RedirectStandardInput = true;
                 process.Start();
 
-                pipe.Stream.Write(data, 0, data.Length);
-                pipe.Stream.Flush();
-                pipe.Dispose();
+                process.StandardInput.BaseStream.Write(data, 0, data.Length);
+                process.StandardInput.Flush();
 
                 while (!Debugger.IsAttached && !process.HasExited)
                     Thread.Sleep(10);
