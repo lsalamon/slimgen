@@ -22,6 +22,7 @@
 #include "stdafx.h"
 
 #include "RuntimeMethodReplacer.h"
+#include "SigFormat.h"
 
 namespace SlimGen
 {
@@ -67,7 +68,7 @@ namespace SlimGen
 		// TODO: method replacement
 	}
 
-	bool RuntimeMethodReplacer::VisitAssemblyHandler(ICorDebugAssembly* assembly, const std::wstring& name)
+	bool RuntimeMethodReplacer::VisitAssemblyHandler(ICorDebugAssembly*, const std::wstring& name)
 	{
 		for (size_t i = 0; i < methods.size(); i++)
 		{
@@ -179,23 +180,21 @@ namespace SlimGen
 		return S_OK;
 	}
 
-	std::wstring RuntimeMethodReplacer::GetMethodNameFromDef(IMetaDataImport2* metadata, mdMethodDef methodDef)
+	std::wstring RuntimeMethodReplacer::GetMethodNameFromDef( IMetaDataImport2* metadata, mdMethodDef methodDef)
 	{
 		ULONG methodNameLength;
 		PCCOR_SIGNATURE signature;
 		ULONG signatureLength;
-		std::wstring signatureStr;
-
 		metadata->GetMethodProps(methodDef, 0, 0, 0, &methodNameLength, 0, 0, 0, 0, 0);
+
 		std::wstring methodName(methodNameLength, 0);
-		metadata->GetMethodProps(methodDef, 0, &methodName[0], static_cast<ULONG>(methodName.length()), &methodNameLength, 0, &signature, &signatureLength, 0, 0);
+		std::wstring signatureStr;
+		metadata->GetMethodProps(methodDef, 0, &methodName[0], methodNameLength, &methodNameLength, 0, &signature, &signatureLength, 0, 0);
 
-		// TODO: Signature parsing
-
-		/*wchar_t sigStr[2048];
+		wchar_t sigStr[2048];
 		SigFormat formatter(sigStr, 2048, methodDef, metadata, metadata);
-		formatter.Parse(static_cast<sig_byte const*>(signature), signatureLength);
-		signatureStr = sigStr;*/
+		formatter.Parse(static_cast<const sig_byte*>(signature), signatureLength);
+		signatureStr = sigStr;
 
 		return methodName.substr(0, methodName.length() - 1) + signatureStr;
 	}
@@ -206,7 +205,7 @@ namespace SlimGen
 		metadata->GetTypeDefProps(typeDef, 0, 0, &typeNameLength, 0, 0);
 
 		std::wstring typeName(typeNameLength, 0);
-		metadata->GetTypeDefProps(typeDef, &typeName[0], static_cast<ULONG>(typeName.length()), &typeNameLength, 0, 0);
+		metadata->GetTypeDefProps(typeDef, &typeName[0], typeNameLength, &typeNameLength, 0, 0);
 
 		return std::wstring(typeName.begin(), typeName.end() - 1);
 	}

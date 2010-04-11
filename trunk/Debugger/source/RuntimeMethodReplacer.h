@@ -37,7 +37,7 @@ namespace SlimGen
 		HRESULT STDMETHODCALLTYPE CreateAppDomain(ICorDebugProcess *pProcess, ICorDebugAppDomain *pAppDomain);
 		HRESULT STDMETHODCALLTYPE Break(ICorDebugAppDomain* appDomain, ICorDebugThread* thread);
 
-		std::wstring GetMethodNameFromDef(IMetaDataImport2* metadata, mdMethodDef methodDef);
+		std::wstring GetMethodNameFromDef( IMetaDataImport2* metadata, mdMethodDef methodDef);
 		std::wstring GetTypeNameFromDef(IMetaDataImport2* metadata, mdTypeDef typeDef);
 
 		void ReplaceMethod(ICorDebugFunction* function, MethodReplacement method);
