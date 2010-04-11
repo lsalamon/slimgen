@@ -78,11 +78,11 @@ namespace SlimGen
             if (compiledData == null || compiledData.Length == 0)
                 throw new ArgumentNullException("compiledData");
 
-            /*foreach (var chunk in compiledData)
+            foreach (var chunk in compiledData)
             {
                 if (chunk == null || chunk.Length == 0)
                     throw new ArgumentException("Data chunk is null or empty.");
-            }*/
+            }
 
             Method = method;
             Platform = platform;
@@ -98,11 +98,11 @@ namespace SlimGen
             bytes.AddRange(BitConverter.GetBytes((int)InstructionSet));
             bytes.AddRange(BitConverter.GetBytes(CompiledData.Length));
 
-            /*foreach (var chunk in CompiledData)
+            foreach (var chunk in CompiledData)
             {
                 bytes.AddRange(BitConverter.GetBytes(chunk.Length));
                 bytes.AddRange(chunk);
-            }*/
+            }
         }
 
         static string GetMethodSignature(MethodBase method)

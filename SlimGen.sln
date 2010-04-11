@@ -2,15 +2,18 @@
 Microsoft Visual Studio Solution File, Format Version 10.00
 # Visual Studio 2008
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SlimGen", "SlimGen\SlimGen.csproj", "{0A265540-64BB-448D-B6A4-676889FCEEA1}"
+	ProjectSection(ProjectDependencies) = postProject
+		{AB92329F-5E6B-436F-ADE1-776B82322B2D} = {AB92329F-5E6B-436F-ADE1-776B82322B2D}
+		{0A6F62B9-5134-46C0-8293-2D7BE846969C} = {0A6F62B9-5134-46C0-8293-2D7BE846969C}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Builder", "Builder\Builder.csproj", "{2A616CFB-7998-404F-907A-5B56D3A9EE70}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Debugger", "Debugger\Debugger.vcproj", "{0A6F62B9-5134-46C0-8293-2D7BE846969C}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Test", "Test\Test.csproj", "{0594C7FA-2FB9-424E-BE89-C1E083E29D10}"
-	ProjectSection(ProjectDependencies) = postProject
-		{0A6F62B9-5134-46C0-8293-2D7BE846969C} = {0A6F62B9-5134-46C0-8293-2D7BE846969C}
-	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cpuid", "cpuid\cpuid.vcproj", "{AB92329F-5E6B-436F-ADE1-776B82322B2D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -52,6 +55,14 @@ Global
 		{0594C7FA-2FB9-424E-BE89-C1E083E29D10}.Release|x64.Build.0 = Release|Any CPU
 		{0594C7FA-2FB9-424E-BE89-C1E083E29D10}.Release|x86.ActiveCfg = Release|Any CPU
 		{0594C7FA-2FB9-424E-BE89-C1E083E29D10}.Release|x86.Build.0 = Release|Any CPU
+		{AB92329F-5E6B-436F-ADE1-776B82322B2D}.Debug|x64.ActiveCfg = Debug|x64
+		{AB92329F-5E6B-436F-ADE1-776B82322B2D}.Debug|x64.Build.0 = Debug|x64
+		{AB92329F-5E6B-436F-ADE1-776B82322B2D}.Debug|x86.ActiveCfg = Debug|Win32
+		{AB92329F-5E6B-436F-ADE1-776B82322B2D}.Debug|x86.Build.0 = Debug|Win32
+		{AB92329F-5E6B-436F-ADE1-776B82322B2D}.Release|x64.ActiveCfg = Release|x64
+		{AB92329F-5E6B-436F-ADE1-776B82322B2D}.Release|x64.Build.0 = Release|x64
+		{AB92329F-5E6B-436F-ADE1-776B82322B2D}.Release|x86.ActiveCfg = Release|Win32
+		{AB92329F-5E6B-436F-ADE1-776B82322B2D}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

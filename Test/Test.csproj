@@ -53,4 +53,7 @@
   <Target Name="AfterBuild">
   </Target>
   -->
+  <PropertyGroup>
+    <PostBuildEvent>copy /Y $(SolutionDir)cpuid\x64\$(ConfigurationName)\cpuid.dll $(TargetDir)cpuid.dll</PostBuildEvent>
+  </PropertyGroup>
 </Project>

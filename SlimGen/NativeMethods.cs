@@ -43,6 +43,31 @@ namespace SlimGen
         }
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    struct CPUInfo
+    {
+        int Part1;
+        int Part2;
+        int Part3;
+        int Part4;
+
+        public int this[int index]
+        {
+            get
+            {
+                switch (index)
+                {
+                    case 0: return Part1;
+                    case 1: return Part2;
+                    case 2: return Part3;
+                    case 3: return Part4;
+                }
+
+                return -1;
+            }
+        }
+    }
+
     static class NativeMethods
     {
         [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
@@ -58,5 +83,14 @@ namespace SlimGen
         [DllImport("kernel32.dll", CharSet = CharSet.Auto)]
         [SuppressUnmanagedCodeSecurity]
         public static extern IntPtr GetCurrentProcess();
+
+        [DllImport("cpuid.dll")]
+        public static extern CPUInfo cpuid(int InfoType);
+
+        [DllImport("cpuid.dll")]
+        public static extern CPUInfo cpuid(uint InfoType);
+
+        [DllImport("cpuid.dll")]
+        public static extern CPUInfo cpuidex(int InfoType, int ECXValue);
     }
 }
