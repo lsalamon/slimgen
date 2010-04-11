@@ -65,7 +65,43 @@ namespace SlimGen
 
 	void RuntimeMethodReplacer::ReplaceMethod(ICorDebugFunction* function, MethodReplacement method)
 	{
-		// TODO: method replacement
+		std::string name(method.Method.begin(), method.Method.end());
+		if (method.Replaced)
+			throw std::runtime_error(std::string("Attempt to replace method ") + name + " multiple times.");
+
+		CComPtr<ICorDebugCode> codePtr;
+		function->GetNativeCode(&codePtr.p);
+		CComQIPtr<ICorDebugCode2> code2Ptr(codePtr);
+
+		ULONG32 chunkCount;
+		code2Ptr->GetCodeChunks(0, &chunkCount, 0);
+		std::vector<CodeChunkInfo> chunks(chunkCount);
+		code2Ptr->GetCodeChunks(chunkCount, &chunkCount, &chunks[0]);
+
+		if (method.CompiledData.size() != chunkCount)
+			throw std::runtime_error(name + " does not have the correct number of code chunks.");
+
+		for (size_t i = 0; i < chunks.size(); i++)
+		{
+			if (method.CompiledData[i].size() != chunks[i].length)
+			{
+				std::stringstream error;
+				error << "Chunk " << i << " for method " << name << " does not have the right code size.";
+				throw std::runtime_error(error.str());
+			}
+
+			SIZE_T written;
+			debugProcess->WriteMemory(chunks[i].startAddr, chunks[i].length, reinterpret_cast<BYTE*>(&method.CompiledData[i][0]), &written);
+
+			if (written != chunks[i].length)
+			{
+				std::stringstream error;
+				error << "Chunk " << i << " for method " << name << " failed to write completely.";
+				throw std::runtime_error(error.str());
+			}
+		}
+
+		method.Replaced = true;
 	}
 
 	bool RuntimeMethodReplacer::VisitAssemblyHandler(ICorDebugAssembly*, const std::wstring& name)

@@ -32,6 +32,12 @@ namespace SlimGen
 {
     public static class Injector
     {
+        public static string Errors
+        {
+            get;
+            private set;
+        }
+
         public static bool Replace(string debuggerPath, IEnumerable<MethodReplacement> methods)
         {
             var stack = new StackTrace(false).GetFrames();
@@ -56,6 +62,8 @@ namespace SlimGen
 
         static bool Launch(string debuggerPath, byte[] data)
         {
+            Errors = string.Empty;
+
             using (var process = new Process())
             {
                 process.StartInfo.Arguments = Process.GetCurrentProcess().Id.ToString(CultureInfo.InvariantCulture);
@@ -63,6 +71,7 @@ namespace SlimGen
                 process.StartInfo.FileName = debuggerPath;
                 process.StartInfo.UseShellExecute = false;
                 process.StartInfo.RedirectStandardInput = true;
+                process.StartInfo.RedirectStandardOutput = true;
                 process.Start();
 
                 process.StandardInput.BaseStream.Write(data, 0, data.Length);
@@ -77,6 +86,7 @@ namespace SlimGen
                 Debugger.Break();
                 process.WaitForExit();
 
+                Errors = process.StandardOutput.ReadToEnd();
                 return process.ExitCode == 0;
             }
         }

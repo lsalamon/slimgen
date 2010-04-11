@@ -20,7 +20,7 @@
 * THE SOFTWARE.
 */
 #include "stdafx.h"
-#include "MethodReplacement.h"
+#include "RuntimeMethodReplacer.h"
 
 int main(int argc, char** argv)
 {
@@ -51,4 +51,33 @@ int main(int argc, char** argv)
 
 		methods.push_back(method);
 	}
+
+	if (methods.size() == 0)
+	{
+		std::cout << "No methods to replace." << std::endl;
+		return -2;
+	}
+
+	try
+	{
+		SlimGen::RuntimeMethodReplacer methodReplacer(methods);
+		methodReplacer.Run(processId);
+	}
+	catch (std::runtime_error &e)
+	{
+		std::cout << e.what();
+		return -3;
+	}
+
+	bool succeeded = true;
+	for (size_t i = 0; i < methods.size(); i++)
+	{
+		if (!methods[i].Replaced)
+		{
+			std::wcout << "Method " << methods[i].Method << " was not replaced.";
+			succeeded = false;
+		}
+	}
+
+	return succeeded ? 0 : -4;
 }

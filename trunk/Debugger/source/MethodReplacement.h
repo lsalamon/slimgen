@@ -28,5 +28,10 @@ namespace SlimGen
 		std::wstring Assembly;
 		std::wstring Method;
 		std::vector<std::vector<char>> CompiledData;
+		bool Replaced;
+
+		MethodReplacement() : Replaced(false)
+		{
+		}
 	};
 }
