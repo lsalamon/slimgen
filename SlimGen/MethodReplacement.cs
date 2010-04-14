@@ -32,19 +32,6 @@ namespace SlimGen
         X64
     }
 
-    public enum InstructionSet
-    {
-        MMX,
-        SSE,
-        SSE2,
-        SSE3,
-        SSSE3,
-        SSE41,
-        SSE42,
-        SSE4A,
-        AVX
-    }
-
     public class MethodReplacement
     {
         public MethodBase Method
@@ -59,7 +46,7 @@ namespace SlimGen
             private set;
         }
 
-        public InstructionSet InstructionSet
+        public InstructionSets InstructionSet
         {
             get;
             private set;
@@ -71,7 +58,7 @@ namespace SlimGen
             private set;
         }
 
-        public MethodReplacement(MethodBase method, Platform platform, InstructionSet instructionSet, byte[][] compiledData)
+        public MethodReplacement(MethodBase method, Platform platform, InstructionSets instructionSet, byte[][] compiledData)
         {
             if (method == null)
                 throw new ArgumentNullException("method");
@@ -94,8 +81,6 @@ namespace SlimGen
         {
             bytes.AddRange(Encoding.ASCII.GetBytes(Method.DeclaringType.Assembly.FullName + "\n"));
             bytes.AddRange(Encoding.ASCII.GetBytes(GetMethodSignature(Method) + "\n"));
-            bytes.AddRange(BitConverter.GetBytes((int)Platform));
-            bytes.AddRange(BitConverter.GetBytes((int)InstructionSet));
             bytes.AddRange(BitConverter.GetBytes(CompiledData.Length));
 
             foreach (var chunk in CompiledData)
