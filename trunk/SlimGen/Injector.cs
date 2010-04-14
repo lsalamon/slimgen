@@ -29,15 +29,36 @@ using System.Threading;
 
 namespace SlimGen
 {
-    public static class Injector
+    public class Injector
     {
-        public static string Errors
+        public static readonly Platform Platform;
+
+        public string DebuggerPath
         {
             get;
             private set;
         }
 
-        public static bool Replace(string debuggerPath, IEnumerable<MethodReplacement> methods)
+        public string Errors
+        {
+            get;
+            private set;
+        }
+
+        static Injector()
+        {
+            if (IntPtr.Size == 4)
+                Platform = Platform.X86;
+            else
+                Platform = Platform.X64;
+        }
+
+        public Injector(string debuggerPath)
+        {
+            DebuggerPath = debuggerPath;
+        }
+
+        public bool Replace(IEnumerable<MethodReplacement> methods)
         {
             var stack = new StackTrace(false).GetFrames();
             foreach (var frame in stack)
@@ -57,10 +78,10 @@ namespace SlimGen
             }
             data.AddRange(Encoding.ASCII.GetBytes("\n"));
 
-            return Launch(debuggerPath, data.ToArray());
+            return Launch(data.ToArray());
         }
 
-        static bool Launch(string debuggerPath, byte[] data)
+        bool Launch(byte[] data)
         {
             Errors = string.Empty;
 
@@ -68,7 +89,7 @@ namespace SlimGen
             {
                 process.StartInfo.Arguments = Process.GetCurrentProcess().Id.ToString(CultureInfo.InvariantCulture);
                 process.StartInfo.CreateNoWindow = false;
-                process.StartInfo.FileName = debuggerPath;
+                process.StartInfo.FileName = DebuggerPath;
                 process.StartInfo.UseShellExecute = false;
                 process.StartInfo.RedirectStandardInput = true;
                 process.StartInfo.RedirectStandardOutput = true;

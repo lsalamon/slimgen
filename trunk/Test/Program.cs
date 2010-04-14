@@ -41,6 +41,8 @@ namespace Test
             Console.WriteLine(CpuInformation.InstructionSets);
             Console.WriteLine(CpuInformation.Features.ToString().Replace(",", "\n"));
             Console.WriteLine(CpuInformation.ExtraInstructions);
+            Console.WriteLine();
+            Console.WriteLine(CpuInformation.GetHighestSimdLevel(InstructionSets.MMX | InstructionSets.Amd3DNow | InstructionSets.SSE3));
         }
     }
 }
