@@ -26,6 +26,7 @@ using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
+using System.Reflection;
 
 namespace SlimGen
 {
@@ -60,42 +61,59 @@ namespace SlimGen
 
         public bool Replace(IEnumerable<MethodReplacement> methods)
         {
-            var stack = new StackTrace(false).GetFrames();
-            foreach (var frame in stack)
-            {
-                foreach (var method in methods)
-                {
-                    if (frame.GetMethod() == method.Method)
-                        throw new InvalidOperationException("Cannot replace a method that is currently on the call stack.");
-                }
-            }
-
-            var data = new List<byte>();
-            foreach (var method in methods)
-            {
-                RuntimeHelpers.PrepareMethod(method.Method.MethodHandle);
-                method.GetBytes(data);
-            }
-            data.AddRange(Encoding.ASCII.GetBytes("\n"));
-
-            return Launch(data.ToArray());
+            methods = Filter(methods);
+            return Launch(methods);
         }
 
-        bool Launch(byte[] data)
+        IEnumerable<MethodReplacement> Filter(IEnumerable<MethodReplacement> methods)
+        {
+            var stack = new Dictionary<MethodBase, object>();
+            var map = new Dictionary<MethodBase, MethodReplacement>();
+
+            foreach (var frame in new StackTrace(false).GetFrames())
+                stack.Add(frame.GetMethod(), null);
+
+            foreach (var method in methods)
+            {
+                if (method.Platform != Platform || (CpuInformation.InstructionSets & method.InstructionSet) == 0)
+                    continue;
+
+                if (stack.ContainsKey(method.Method))
+                    throw new InvalidOperationException("Cannot replace a method that is currently on the call stack.");
+
+                if (map.ContainsKey(method.Method))
+                {
+                    if (method.InstructionSet.CompareTo(map[method.Method]) > 0)
+                        map[method.Method] = method;
+                }
+                else
+                    map.Add(method.Method, method);
+            }
+
+            return map.Values;
+        }
+
+        bool Launch(IEnumerable<MethodReplacement> methods)
         {
             Errors = string.Empty;
 
             using (var process = new Process())
             {
                 process.StartInfo.Arguments = Process.GetCurrentProcess().Id.ToString(CultureInfo.InvariantCulture);
-                process.StartInfo.CreateNoWindow = false;
+                process.StartInfo.CreateNoWindow = true;
                 process.StartInfo.FileName = DebuggerPath;
                 process.StartInfo.UseShellExecute = false;
                 process.StartInfo.RedirectStandardInput = true;
                 process.StartInfo.RedirectStandardOutput = true;
                 process.Start();
 
-                process.StandardInput.BaseStream.Write(data, 0, data.Length);
+                foreach (var method in methods)
+                {
+                    RuntimeHelpers.PrepareMethod(method.Method.MethodHandle);
+                    method.Write(process.StandardInput);
+                }
+
+                process.StandardInput.WriteLine();
                 process.StandardInput.Flush();
 
                 while (!Debugger.IsAttached && !process.HasExited)
@@ -105,9 +123,10 @@ namespace SlimGen
                     return false;
 
                 Debugger.Break();
-                process.WaitForExit();
 
                 Errors = process.StandardOutput.ReadToEnd();
+                process.WaitForExit();
+
                 return process.ExitCode == 0;
             }
         }
