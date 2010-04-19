@@ -23,6 +23,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Reflection;
+using System.IO;
 
 namespace SlimGen
 {
@@ -77,16 +78,16 @@ namespace SlimGen
             CompiledData = compiledData;
         }
 
-        public void GetBytes(List<byte> bytes)
+        public void Write(StreamWriter writer)
         {
-            bytes.AddRange(Encoding.ASCII.GetBytes(Method.DeclaringType.Assembly.FullName + "\n"));
-            bytes.AddRange(Encoding.ASCII.GetBytes(GetMethodSignature(Method) + "\n"));
-            bytes.AddRange(BitConverter.GetBytes(CompiledData.Length));
+            writer.WriteLine(Method.DeclaringType.Assembly.FullName);
+            writer.WriteLine(GetMethodSignature(Method));
+            writer.WriteLine(CompiledData.Length);
 
             foreach (var chunk in CompiledData)
             {
-                bytes.AddRange(BitConverter.GetBytes(chunk.Length));
-                bytes.AddRange(chunk);
+                writer.WriteLine(chunk.Length);
+                writer.BaseStream.Write(chunk, 0, chunk.Length);
             }
         }
 

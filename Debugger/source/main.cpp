@@ -24,6 +24,8 @@
 
 int main(int argc, char** argv)
 {
+	std::cout << "TraceB" << std::endl;
+
 	if (argc != 2)
 		return -1;
 
@@ -39,18 +41,26 @@ int main(int argc, char** argv)
 
 		int chunks;
 		std::cin >> chunks;
+		std::cout << chunks;
 		method.CompiledData = std::vector<std::vector<char>>(chunks);
 
 		for (int i = 0; i < chunks; i++)
 		{
 			int size;
 			std::cin >> size;
+
+			std::cout << size;
 			method.CompiledData[i] = std::vector<char>(size);
-			std::cin.read(&method.CompiledData[i][0], size);
+			//std::cin.read(&method.CompiledData[i][0], size);
 		}
 
 		methods.push_back(method);
 	}
+
+	
+
+	std::cout << "TraceA" << std::endl;
+	return -10;
 
 	if (methods.size() == 0)
 	{
@@ -58,16 +68,22 @@ int main(int argc, char** argv)
 		return -2;
 	}
 
+	std::cout << "Trace1" << std::endl;
+
 	try
 	{
 		SlimGen::RuntimeMethodReplacer methodReplacer(methods);
 		methodReplacer.Run(processId);
+
+		std::cout << "Trace2" << std::endl;
 	}
 	catch (std::runtime_error &e)
 	{
 		std::cout << e.what();
 		return -3;
 	}
+
+	std::cout << "Trace3" << std::endl;
 
 	bool succeeded = true;
 	for (size_t i = 0; i < methods.size(); i++)
@@ -78,6 +94,8 @@ int main(int argc, char** argv)
 			succeeded = false;
 		}
 	}
+
+	std::cout << "Trace4" << std::endl;
 
 	return succeeded ? 0 : -4;
 }

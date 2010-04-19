@@ -267,22 +267,5 @@ namespace SlimGen
             if (index != 0)
                 Brand = Encoding.ASCII.GetString(brand, 0, index);
         }
-
-        public static InstructionSets GetHighestSimdLevel(InstructionSets instructionSets)
-        {
-            InstructionSets highest = InstructionSets.None;
-            var simdSets = InstructionSets.MMX | InstructionSets.SSE | InstructionSets.SSE2 | InstructionSets.SSE3 | InstructionSets.SSSE3 | InstructionSets.SSE41 | InstructionSets.SSE42;
-
-            foreach (var item in Enum.GetValues(typeof(InstructionSets)))
-            {
-                InstructionSets v = (InstructionSets)item;
-                if ((simdSets & v) == 0 || (InstructionSets & v) == 0 || (instructionSets & v) == 0)
-                    continue;
-
-                highest = (InstructionSets)Math.Max((int)v, (int)highest);
-            }
-
-            return highest;
-        }
     }
 }
