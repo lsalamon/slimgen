@@ -70,14 +70,17 @@ namespace SlimGen {
 
 			foreach (ReplaceMethodAttribute replaceMethodAttribute in attributes) {
 				var dataSets = new byte[replaceMethodAttribute.DataFiles.Length][];
+				var isMissingData = false;
 				for (var i = 0; i < dataSets.Length; ++i) {
 					try {
 						dataSets[i] = File.ReadAllBytes(replaceMethodAttribute.DataFiles[i]);
 					} catch(Exception) {
-						return;
+						isMissingData = true;
+						break;
 					}
 				}
-
+				if(isMissingData)
+					continue;
 				methods.Add(new MethodReplacement(method, replaceMethodAttribute.Platform, replaceMethodAttribute.InstructionSet, dataSets));
 			}
 		}
