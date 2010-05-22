@@ -23,114 +23,126 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Reflection;
 
-namespace SlimGen
-{
-    public class Injector
-    {
-        public static readonly Platform Platform;
+namespace SlimGen {
+	public class Injector {
+		public static readonly Platform Platform;
 
-        public string DebuggerPath
-        {
-            get;
-            private set;
-        }
+		public string DebuggerPath {
+			get;
+			private set;
+		}
 
-        public string Errors
-        {
-            get;
-            private set;
-        }
+		public string Errors {
+			get;
+			private set;
+		}
 
-        static Injector()
-        {
-            if (IntPtr.Size == 4)
-                Platform = Platform.X86;
-            else
-                Platform = Platform.X64;
-        }
+		static Injector() {
+			if (IntPtr.Size == 4)
+				Platform = Platform.X86;
+			else
+				Platform = Platform.X64;
+		}
 
-        public Injector(string debuggerPath)
-        {
-            DebuggerPath = debuggerPath;
-        }
+		public Injector(string debuggerPath) {
+			DebuggerPath = debuggerPath;
+		}
 
-        public bool Replace(IEnumerable<MethodReplacement> methods)
-        {
-            methods = Filter(methods);
-            return Launch(methods);
-        }
+		public void ProcessAssemblies(params Assembly[] assemblies) {
+			var methods = new List<MethodReplacement>();
 
-        IEnumerable<MethodReplacement> Filter(IEnumerable<MethodReplacement> methods)
-        {
-            var stack = new Dictionary<MethodBase, object>();
-            var map = new Dictionary<MethodBase, MethodReplacement>();
+			foreach (var assembly in assemblies) {
+				foreach (var type in assembly.GetTypes()) {
+					foreach (var method in type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static)) {
+						var attributes = method.GetCustomAttributes(typeof (ReplaceMethodAttribute), false);
 
-            foreach (var frame in new StackTrace(false).GetFrames())
-                stack.Add(frame.GetMethod(), null);
+						if (attributes.Length == 0)
+							continue;
 
-            foreach (var method in methods)
-            {
-                if (method.Platform != Platform || (CpuInformation.InstructionSets & method.InstructionSet) == 0)
-                    continue;
+						var replaceMethodAttrib = (ReplaceMethodAttribute) attributes[0];
+						var dataSets = new byte[replaceMethodAttrib.DataFiles.Length][];
+						for (var i = 0; i < dataSets.Length; ++i) {
+							dataSets[i] = File.ReadAllBytes(replaceMethodAttrib.DataFiles[i]);
+						}
 
-                if (stack.ContainsKey(method.Method))
-                    throw new InvalidOperationException("Cannot replace a method that is currently on the call stack.");
+						methods.Add(new MethodReplacement(method, replaceMethodAttrib.Platform, replaceMethodAttrib.InstructionSet, dataSets));
+					}
+				}
+			}
 
-                if (map.ContainsKey(method.Method))
-                {
-                    if (method.InstructionSet.CompareTo(map[method.Method]) > 0)
-                        map[method.Method] = method;
-                }
-                else
-                    map.Add(method.Method, method);
-            }
+			Replace(methods);
+		}
 
-            return map.Values;
-        }
+		public bool Replace(IEnumerable<MethodReplacement> methods) {
+			methods = Filter(methods);
+			return Launch(methods);
+		}
 
-        bool Launch(IEnumerable<MethodReplacement> methods)
-        {
-            Errors = string.Empty;
+		static IEnumerable<MethodReplacement> Filter(IEnumerable<MethodReplacement> methods) {
+			var stack = new Dictionary<MethodBase, object>();
+			var map = new Dictionary<MethodBase, MethodReplacement>();
 
-            using (var process = new Process())
-            {
-                process.StartInfo.Arguments = Process.GetCurrentProcess().Id.ToString(CultureInfo.InvariantCulture);
-                process.StartInfo.CreateNoWindow = true;
-                process.StartInfo.FileName = DebuggerPath;
-                process.StartInfo.UseShellExecute = false;
-                process.StartInfo.RedirectStandardInput = true;
-                process.StartInfo.RedirectStandardOutput = true;
-                process.Start();
+			foreach (var frame in new StackTrace(false).GetFrames())
+				stack.Add(frame.GetMethod(), null);
+
+			foreach (var method in methods) {
+				if (method.Platform != Platform || (CpuInformation.InstructionSets & method.InstructionSet) == 0)
+					continue;
+
+				if (stack.ContainsKey(method.Method))
+					throw new InvalidOperationException("Cannot replace a method that is currently on the call stack.");
+
+				if (map.ContainsKey(method.Method)) {
+					if (method.InstructionSet.CompareTo(map[method.Method]) > 0)
+						map[method.Method] = method;
+				} else
+					map.Add(method.Method, method);
+			}
+
+			return map.Values;
+		}
+
+		bool Launch(IEnumerable<MethodReplacement> methods) {
+			Errors = string.Empty;
+
+			using (var process = new Process()) {
+				process.StartInfo.Arguments = Process.GetCurrentProcess().Id.ToString(CultureInfo.InvariantCulture);
+				process.StartInfo.CreateNoWindow = true;
+				process.StartInfo.FileName = DebuggerPath;
+				process.StartInfo.UseShellExecute = false;
+				process.StartInfo.RedirectStandardInput = true;
+				process.StartInfo.RedirectStandardOutput = true;
+				process.Start();
 
 				process.StandardInput.WriteLine(this.GetType().Assembly.ImageRuntimeVersion);
 
-                foreach (var method in methods)
-                {
-                    RuntimeHelpers.PrepareMethod(method.Method.MethodHandle);
-                    method.Write(process.StandardInput);
-                }
+				foreach (var method in methods) {
+					RuntimeHelpers.PrepareMethod(method.Method.MethodHandle);
+					method.Write(process.StandardInput);
+				}
 
-                process.StandardInput.WriteLine();
-                process.StandardInput.Flush();
+				process.StandardInput.WriteLine();
+				process.StandardInput.Flush();
 
-                while (!Debugger.IsAttached && !process.HasExited)
-                    Thread.Sleep(10);
+				while (!Debugger.IsAttached && !process.HasExited)
+					Thread.Sleep(10);
 
-                if (process.HasExited)
-                    return false;
+				if (process.HasExited)
+					return false;
 
-                Debugger.Break();
+				Debugger.Break();
 
-                Errors = process.StandardOutput.ReadToEnd();
-                process.WaitForExit();
+				Errors = process.StandardOutput.ReadToEnd();
+				process.WaitForExit();
 
-                return process.ExitCode == 0;
-            }
-        }
-    }
+				return process.ExitCode == 0;
+			}
+		}
+	}
 }

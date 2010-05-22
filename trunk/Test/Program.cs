@@ -11,6 +11,7 @@ namespace Test
     {
         public float X, Y, Z, W;
 
+		[ReplaceMethod(DataFiles = new []{"dp.sse3.x64"}, InstructionSet = InstructionSets.SSE3, Platform = Platform.X64)]
         public static void DotProduct(ref Vector4 left, ref Vector4 right, out float result)
         {
             result = left.X * right.X + left.Y * right.Y + left.Z * right.Z + left.W * right.W;
@@ -27,14 +28,10 @@ namespace Test
             float result1;
             Vector4.DotProduct(ref left, ref right, out result1);
 
-            var data = File.ReadAllBytes("dp.sse3.x64");
-            var methods = new List<MethodReplacement>();
-            methods.Add(new MethodReplacement(typeof(Vector4).GetMethod("DotProduct"), Platform.X64, InstructionSets.SSE3, new[] { data }));
-            
             var injector = new Injector("../../../Debugger/x64/Debug/debugger.exe");
-            bool result = injector.Replace(methods);
+            injector.ProcessAssemblies(typeof(Program).Assembly);
 
-            Console.WriteLine(injector.Errors);
+            //Console.WriteLine(injector.Errors);
 
             float result2;
             Vector4.DotProduct(ref left, ref right, out result2);
