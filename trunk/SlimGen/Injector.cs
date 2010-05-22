@@ -62,16 +62,14 @@ namespace SlimGen {
 					foreach (var method in type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static)) {
 						var attributes = method.GetCustomAttributes(typeof (ReplaceMethodAttribute), false);
 
-						if (attributes.Length == 0)
-							continue;
+						foreach (ReplaceMethodAttribute replaceMethodAttribute in attributes) {
+							var dataSets = new byte[replaceMethodAttribute.DataFiles.Length][];
+							for (var i = 0; i < dataSets.Length; ++i) {
+								dataSets[i] = File.ReadAllBytes(replaceMethodAttribute.DataFiles[i]);
+							}
 
-						var replaceMethodAttrib = (ReplaceMethodAttribute) attributes[0];
-						var dataSets = new byte[replaceMethodAttrib.DataFiles.Length][];
-						for (var i = 0; i < dataSets.Length; ++i) {
-							dataSets[i] = File.ReadAllBytes(replaceMethodAttrib.DataFiles[i]);
+							methods.Add(new MethodReplacement(method, replaceMethodAttribute.Platform, replaceMethodAttribute.InstructionSet, dataSets));
 						}
-
-						methods.Add(new MethodReplacement(method, replaceMethodAttrib.Platform, replaceMethodAttrib.InstructionSet, dataSets));
 					}
 				}
 			}
