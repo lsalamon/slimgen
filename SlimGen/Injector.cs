@@ -44,10 +44,7 @@ namespace SlimGen {
 		}
 
 		static Injector() {
-			if (IntPtr.Size == 4)
-				Platform = Platform.X86;
-			else
-				Platform = Platform.X64;
+			Platform = IntPtr.Size == 4 ? Platform.X86 : Platform.X64;
 		}
 
 		public Injector(string debuggerPath) {
@@ -60,21 +57,29 @@ namespace SlimGen {
 			foreach (var assembly in assemblies) {
 				foreach (var type in assembly.GetTypes()) {
 					foreach (var method in type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static)) {
-						var attributes = method.GetCustomAttributes(typeof (ReplaceMethodAttribute), false);
-
-						foreach (ReplaceMethodAttribute replaceMethodAttribute in attributes) {
-							var dataSets = new byte[replaceMethodAttribute.DataFiles.Length][];
-							for (var i = 0; i < dataSets.Length; ++i) {
-								dataSets[i] = File.ReadAllBytes(replaceMethodAttribute.DataFiles[i]);
-							}
-
-							methods.Add(new MethodReplacement(method, replaceMethodAttribute.Platform, replaceMethodAttribute.InstructionSet, dataSets));
-						}
+						ProcessMethod(method, methods);
 					}
 				}
 			}
 
 			Replace(methods);
+		}
+
+		private static void ProcessMethod(MethodBase method, ICollection<MethodReplacement> methods) {
+			var attributes = method.GetCustomAttributes(typeof (ReplaceMethodAttribute), false);
+
+			foreach (ReplaceMethodAttribute replaceMethodAttribute in attributes) {
+				var dataSets = new byte[replaceMethodAttribute.DataFiles.Length][];
+				for (var i = 0; i < dataSets.Length; ++i) {
+					try {
+						dataSets[i] = File.ReadAllBytes(replaceMethodAttribute.DataFiles[i]);
+					} catch(Exception) {
+						return;
+					}
+				}
+
+				methods.Add(new MethodReplacement(method, replaceMethodAttribute.Platform, replaceMethodAttribute.InstructionSet, dataSets));
+			}
 		}
 
 		public bool Replace(IEnumerable<MethodReplacement> methods) {
