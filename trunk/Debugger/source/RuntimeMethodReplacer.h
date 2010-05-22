@@ -29,7 +29,7 @@ namespace SlimGen
 	class RuntimeMethodReplacer : private Debugger
 	{
 	public:
-		RuntimeMethodReplacer(const std::vector<MethodReplacement>& methods) : methods(methods) { }
+		RuntimeMethodReplacer(std::vector<MethodReplacement>& methods) : methods(methods) { }
 
 		void Run(int processId, std::wstring const& runtimeVersion);
 
@@ -40,11 +40,11 @@ namespace SlimGen
 		std::wstring GetMethodNameFromDef( IMetaDataImport2* metadata, mdMethodDef methodDef);
 		std::wstring GetTypeNameFromDef(IMetaDataImport2* metadata, mdTypeDef typeDef);
 
-		void ReplaceMethod(ICorDebugFunction* function, MethodReplacement method);
+		void ReplaceMethod(ICorDebugFunction* function, MethodReplacement& method);
 		bool VisitAssemblyHandler(ICorDebugAssembly* assembly, const std::wstring& name);
 		void VisitFunctionHandler(ICorDebugFunction* function, const std::wstring& signature);
 
-		const std::vector<MethodReplacement>& methods;
+		std::vector<MethodReplacement>& methods;
 
 		Handle waitForSlimGen;
 		CComPtr<ICorDebugProcess> debugProcess;
