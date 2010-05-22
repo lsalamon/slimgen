@@ -107,6 +107,8 @@ namespace SlimGen
                 process.StartInfo.RedirectStandardOutput = true;
                 process.Start();
 
+				process.StandardInput.WriteLine(this.GetType().Assembly.ImageRuntimeVersion);
+
                 foreach (var method in methods)
                 {
                     RuntimeHelpers.PrepareMethod(method.Method.MethodHandle);

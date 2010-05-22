@@ -94,16 +94,20 @@ namespace SlimGen
         static string GetMethodSignature(MethodBase method)
         {
             var builder = new StringBuilder();
-            builder.Append(method.Name);
+            builder.Append(method.DeclaringType.FullName + "." + method.Name);
             builder.Append("(");
 
             var parameters = method.GetParameters();
             foreach (var parameter in parameters)
             {
-                if (parameter.IsOut)
-                    builder.Append("ref ");
+            	string paramName = parameter.ParameterType.FullName;
 
-                builder.Append(parameter.ParameterType.FullName);
+				if (parameter.ParameterType.IsByRef) {
+					paramName = paramName.Substring(0, paramName.Length - 1);
+					builder.Append("ref ");
+				}
+
+            	builder.Append(paramName);
                 builder.Append(", ");
             }
 

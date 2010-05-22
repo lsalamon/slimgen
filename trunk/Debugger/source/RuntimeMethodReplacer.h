@@ -31,7 +31,7 @@ namespace SlimGen
 	public:
 		RuntimeMethodReplacer(const std::vector<MethodReplacement>& methods) : methods(methods) { }
 
-		void Run(int processId);
+		void Run(int processId, std::wstring const& runtimeVersion);
 
 	private:
 		HRESULT STDMETHODCALLTYPE CreateAppDomain(ICorDebugProcess *pProcess, ICorDebugAppDomain *pAppDomain);
