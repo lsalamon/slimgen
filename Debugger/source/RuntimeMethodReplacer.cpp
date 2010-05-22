@@ -63,10 +63,9 @@ namespace SlimGen
         CoUninitialize();
     }
 
-    void RuntimeMethodReplacer::ReplaceMethod(ICorDebugFunction* function, MethodReplacement method)
+    void RuntimeMethodReplacer::ReplaceMethod(ICorDebugFunction* function, MethodReplacement& method)
     {
         std::string name(method.Method.begin(), method.Method.end());
-        MessageBoxA(0, name.c_str(), "", MB_OK);
         if (method.Replaced)
             throw std::runtime_error(std::string("Attempt to replace method ") + name + " multiple times.");
 
@@ -84,7 +83,7 @@ namespace SlimGen
 
         for (size_t i = 0; i < chunks.size(); i++)
         {
-            if (method.CompiledData[i].size() != chunks[i].length)
+            if (method.CompiledData[i].size() > chunks[i].length)
             {
                 std::stringstream error;
                 error << "Chunk " << i << " for method " << name << " does not have the right code size.";
@@ -92,16 +91,15 @@ namespace SlimGen
             }
 
             SIZE_T written;
-            debugProcess->WriteMemory(chunks[i].startAddr, chunks[i].length, reinterpret_cast<BYTE*>(&method.CompiledData[i][0]), &written);
+            debugProcess->WriteMemory(chunks[i].startAddr, method.CompiledData[i].size(), reinterpret_cast<BYTE*>(&method.CompiledData[i][0]), &written);
 
-            if (written != chunks[i].length)
+            if (written != method.CompiledData[i].size())
             {
                 std::stringstream error;
                 error << "Chunk " << i << " for method " << name << " failed to write completely.";
                 throw std::runtime_error(error.str());
             }
         }
-
         method.Replaced = true;
     }
 
@@ -127,7 +125,6 @@ namespace SlimGen
 
             if(signature == methods[i].Method)
             {
-                MessageBox(0, L"Visit Method", L"", MB_OK);
                 ReplaceMethod(function, methods[i]);
                 break;
             }
