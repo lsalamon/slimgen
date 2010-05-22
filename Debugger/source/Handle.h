@@ -34,7 +34,7 @@ namespace SlimGen
 		operator HANDLE&() { return handle; }
 		void Reset(HANDLE newValue = 0) { handle = newValue; }
 
-		bool IsInvalid() { return handle != 0 && handle != INVALID_HANDLE_VALUE; }
+		bool IsInvalid() { return handle == 0 || handle == INVALID_HANDLE_VALUE; }
 
 	private:
 		Handle(const Handle&) {}

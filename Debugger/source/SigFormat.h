@@ -121,20 +121,20 @@ namespace SlimGen
 				DebugBreak();
 				return L"unknown element type";
 				MAKE_CASE(ELEMENT_TYPE_END)
-			case ELEMENT_TYPE_VOID: return L"void";
-			case ELEMENT_TYPE_BOOLEAN: return L"bool";
-			case ELEMENT_TYPE_CHAR: return L"char";
-			case ELEMENT_TYPE_I1: return L"sbyte";
-			case ELEMENT_TYPE_U1: return L"byte";
-			case ELEMENT_TYPE_I2: return L"short";
-			case ELEMENT_TYPE_U2: return L"ushort";
-			case ELEMENT_TYPE_I4: return L"int";
-			case ELEMENT_TYPE_U4: return L"uint";
-			case ELEMENT_TYPE_I8: return L"long";
-			case ELEMENT_TYPE_U8: return L"ulong";
-			case ELEMENT_TYPE_R4: return L"float";
-			case ELEMENT_TYPE_R8: return L"double";
-			case ELEMENT_TYPE_STRING: return L"string";
+			case ELEMENT_TYPE_VOID: return L"System.Void";
+			case ELEMENT_TYPE_BOOLEAN: return L"System.Boolean";
+			case ELEMENT_TYPE_CHAR: return L"System.Char";
+			case ELEMENT_TYPE_I1: return L"System.SByte";
+			case ELEMENT_TYPE_U1: return L"System.Byte";
+			case ELEMENT_TYPE_I2: return L"System.Int16";
+			case ELEMENT_TYPE_U2: return L"System.UInt16";
+			case ELEMENT_TYPE_I4: return L"System.Int32";
+			case ELEMENT_TYPE_U4: return L"System.UInt32";
+			case ELEMENT_TYPE_I8: return L"System.Int64";
+			case ELEMENT_TYPE_U8: return L"System.UInt64";
+			case ELEMENT_TYPE_R4: return L"System.Single";
+			case ELEMENT_TYPE_R8: return L"System.Double";
+			case ELEMENT_TYPE_STRING: return L"System.String";
 				MAKE_CASE(ELEMENT_TYPE_PTR)
 					MAKE_CASE(ELEMENT_TYPE_BYREF)
 					MAKE_CASE(ELEMENT_TYPE_VALUETYPE)
@@ -143,10 +143,10 @@ namespace SlimGen
 					MAKE_CASE(ELEMENT_TYPE_ARRAY)
 					MAKE_CASE(ELEMENT_TYPE_GENERICINST)
 					MAKE_CASE(ELEMENT_TYPE_TYPEDBYREF)
-			case ELEMENT_TYPE_I: return L"IntPtr";
-			case ELEMENT_TYPE_U: return L"UIntPtr";
+			case ELEMENT_TYPE_I: return L"System.IntPtr";
+			case ELEMENT_TYPE_U: return L"System.UIntPtr";
 				MAKE_CASE(ELEMENT_TYPE_FNPTR)
-			case ELEMENT_TYPE_OBJECT: return L"object";
+			case ELEMENT_TYPE_OBJECT: return L"System.Object";
 				MAKE_CASE(ELEMENT_TYPE_SZARRAY)
 					MAKE_CASE(ELEMENT_TYPE_MVAR)
 					MAKE_CASE(ELEMENT_TYPE_CMOD_REQD)

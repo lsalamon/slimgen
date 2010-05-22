@@ -26,240 +26,249 @@
 
 namespace SlimGen
 {
-	template<class T> std::wstring GetName(T* ptr)
-	{
-		ULONG32 nameLen = 0;
-		ptr->GetName(nameLen, &nameLen, 0);
+    template<class T> std::wstring GetName(T* ptr)
+    {
+        ULONG32 nameLen = 0;
+        ptr->GetName(nameLen, &nameLen, 0);
 
-		std::wstring name(nameLen, 0);
-		ptr->GetName(nameLen, &nameLen, &name[0]);
+        std::wstring name(nameLen, 0);
+        ptr->GetName(nameLen, &nameLen, &name[0]);
 
-		return std::wstring(name.begin(), name.end() - 1);
-	}
+        return std::wstring(name.begin(), name.end() - 1);
+    }
 
-	void RuntimeMethodReplacer::Run(int processId)
-	{
-		if (FAILED(CoInitialize(0)))
-			throw std::runtime_error("Unable to initialize COM.");
+    void RuntimeMethodReplacer::Run(int processId, std::wstring const& runtimeVersion)
+    {
+        if (FAILED(CoInitialize(0)))
+            throw std::runtime_error("Unable to initialize COM.");
 
-		waitForSlimGen.Reset(CreateEvent(0, TRUE, FALSE, 0));
-		std::wstring version = GetRuntimeVersion(processId);
+        waitForSlimGen.Reset(CreateEvent(0, TRUE, FALSE, 0));
+        std::wstring version = runtimeVersion;//GetRuntimeVersion(processId);
 
-		CComPtr<ICorDebug> corDebug;
-		if (FAILED(CreateDebuggingInterfaceFromVersion(CorDebugLatestVersion, version.c_str(), reinterpret_cast<IUnknown**>(&corDebug.p))))
-			throw std::runtime_error("Unable to create debugging interface from version.");
+        CComPtr<ICorDebug> corDebug;
+        if (FAILED(CreateDebuggingInterfaceFromVersion(CorDebugLatestVersion, version.c_str(), reinterpret_cast<IUnknown**>(&corDebug.p))))
+            throw std::runtime_error("Unable to create debugging interface from version.");
 
-		if (FAILED(corDebug->Initialize()))
-			throw std::runtime_error("Unable to initialize debugging interface.");
+        if (FAILED(corDebug->Initialize()))
+            throw std::runtime_error("Unable to initialize debugging interface.");
 
-		if (FAILED(corDebug->SetManagedHandler(this)))
-			throw std::runtime_error("Unable to set managed debugger callback.");
+        if (FAILED(corDebug->SetManagedHandler(this)))
+            throw std::runtime_error("Unable to set managed debugger callback.");
 
-		if (FAILED(corDebug->DebugActiveProcess(processId, FALSE, &debugProcess.p)))
-			throw std::runtime_error("Unable to attach to process for debugging.");
+        if (FAILED(corDebug->DebugActiveProcess(processId, FALSE, &debugProcess.p)))
+            throw std::runtime_error("Unable to attach to process for debugging.");
 
-		WaitForSingleObject(waitForSlimGen, INFINITE);
-		corDebug->Terminate();
-		CoUninitialize();
-	}
+        WaitForSingleObject(waitForSlimGen, INFINITE);
+        corDebug->Terminate();
+        CoUninitialize();
+    }
 
-	void RuntimeMethodReplacer::ReplaceMethod(ICorDebugFunction* function, MethodReplacement method)
-	{
-		std::string name(method.Method.begin(), method.Method.end());
-		if (method.Replaced)
-			throw std::runtime_error(std::string("Attempt to replace method ") + name + " multiple times.");
+    void RuntimeMethodReplacer::ReplaceMethod(ICorDebugFunction* function, MethodReplacement method)
+    {
+        std::string name(method.Method.begin(), method.Method.end());
+        MessageBoxA(0, name.c_str(), "", MB_OK);
+        if (method.Replaced)
+            throw std::runtime_error(std::string("Attempt to replace method ") + name + " multiple times.");
 
-		CComPtr<ICorDebugCode> codePtr;
-		function->GetNativeCode(&codePtr.p);
-		CComQIPtr<ICorDebugCode2> code2Ptr(codePtr);
+        CComPtr<ICorDebugCode> codePtr;
+        function->GetNativeCode(&codePtr.p);
+        CComQIPtr<ICorDebugCode2> code2Ptr(codePtr);
 
-		ULONG32 chunkCount;
-		code2Ptr->GetCodeChunks(0, &chunkCount, 0);
-		std::vector<CodeChunkInfo> chunks(chunkCount);
-		code2Ptr->GetCodeChunks(chunkCount, &chunkCount, &chunks[0]);
+        ULONG32 chunkCount;
+        code2Ptr->GetCodeChunks(0, &chunkCount, 0);
+        std::vector<CodeChunkInfo> chunks(chunkCount);
+        code2Ptr->GetCodeChunks(chunkCount, &chunkCount, &chunks[0]);
 
-		if (method.CompiledData.size() != chunkCount)
-			throw std::runtime_error(name + " does not have the correct number of code chunks.");
+        if (method.CompiledData.size() != chunkCount)
+            throw std::runtime_error(name + " does not have the correct number of code chunks.");
 
-		for (size_t i = 0; i < chunks.size(); i++)
-		{
-			if (method.CompiledData[i].size() != chunks[i].length)
-			{
-				std::stringstream error;
-				error << "Chunk " << i << " for method " << name << " does not have the right code size.";
-				throw std::runtime_error(error.str());
-			}
+        for (size_t i = 0; i < chunks.size(); i++)
+        {
+            if (method.CompiledData[i].size() != chunks[i].length)
+            {
+                std::stringstream error;
+                error << "Chunk " << i << " for method " << name << " does not have the right code size.";
+                throw std::runtime_error(error.str());
+            }
 
-			SIZE_T written;
-			debugProcess->WriteMemory(chunks[i].startAddr, chunks[i].length, reinterpret_cast<BYTE*>(&method.CompiledData[i][0]), &written);
+            SIZE_T written;
+            debugProcess->WriteMemory(chunks[i].startAddr, chunks[i].length, reinterpret_cast<BYTE*>(&method.CompiledData[i][0]), &written);
 
-			if (written != chunks[i].length)
-			{
-				std::stringstream error;
-				error << "Chunk " << i << " for method " << name << " failed to write completely.";
-				throw std::runtime_error(error.str());
-			}
-		}
+            if (written != chunks[i].length)
+            {
+                std::stringstream error;
+                error << "Chunk " << i << " for method " << name << " failed to write completely.";
+                throw std::runtime_error(error.str());
+            }
+        }
 
-		method.Replaced = true;
-	}
+        method.Replaced = true;
+    }
 
-	bool RuntimeMethodReplacer::VisitAssemblyHandler(ICorDebugAssembly*, const std::wstring& name)
-	{
-		for (size_t i = 0; i < methods.size(); i++)
-		{
-			if(methods[i].Assembly == name)
-				return true;
-		}
+    bool RuntimeMethodReplacer::VisitAssemblyHandler(ICorDebugAssembly*, const std::wstring& name)
+    {
+        for (size_t i = 0; i < methods.size(); i++)
+        {
+            if(methods[i].Assembly == name)
+                return true;
+        }
 
-		return false;
-	}
+        return true;
+    }
 
-	void RuntimeMethodReplacer::VisitFunctionHandler(ICorDebugFunction* function, const std::wstring& signature)
-	{
-		for(size_t i = 0; i < methods.size(); i++)
-		{
-			if(signature == methods[i].Method)
-			{
-				ReplaceMethod(function, methods[i]);
-				break;
-			}
-		}
-	}
+    void RuntimeMethodReplacer::VisitFunctionHandler(ICorDebugFunction* function, const std::wstring& signature)
+    {
+        if(signature.find(L"DotProduct") != signature.npos) {
+            std::wcout<<signature<<std::endl;
+        }
 
-	HRESULT STDMETHODCALLTYPE RuntimeMethodReplacer::CreateAppDomain(ICorDebugProcess *pProcess, ICorDebugAppDomain *pAppDomain)
-	{
-		pAppDomain->Attach();
-		pProcess->Continue(FALSE);
-		return S_OK;
-	}
+        for(size_t i = 0; i < methods.size(); i++)
+        {
 
-	HRESULT STDMETHODCALLTYPE RuntimeMethodReplacer::Break(ICorDebugAppDomain* appDomain, ICorDebugThread*)
-	{
-		ULONG assemblyCount;
-		ICorDebugAssembly* assembly;
-		ICorDebugAssemblyEnum* assemblyEnum;
+            if(signature == methods[i].Method)
+            {
+                MessageBox(0, L"Visit Method", L"", MB_OK);
+                ReplaceMethod(function, methods[i]);
+                break;
+            }
+        }
+    }
 
-		appDomain->EnumerateAssemblies(&assemblyEnum);
-		assemblyEnum->Next(1, &assembly, &assemblyCount);
+    HRESULT STDMETHODCALLTYPE RuntimeMethodReplacer::CreateAppDomain(ICorDebugProcess *pProcess, ICorDebugAppDomain *pAppDomain)
+    {
+        pAppDomain->Attach();
+        pProcess->Continue(FALSE);
+        return S_OK;
+    }
 
-		while (assemblyCount)
-		{
-			if (!VisitAssemblyHandler(assembly, GetName(assembly)))
-			{
-				assembly->Release();
-				assemblyEnum->Next(1, &assembly, &assemblyCount);
-				continue;
-			}
+    HRESULT STDMETHODCALLTYPE RuntimeMethodReplacer::Break(ICorDebugAppDomain* appDomain, ICorDebugThread*)
+    {
+        ULONG assemblyCount;
+        ICorDebugAssembly* assembly;
+        ICorDebugAssemblyEnum* assemblyEnum;
 
-			ULONG moduleCount;
-			ICorDebugModule* module;
-			ICorDebugModuleEnum* moduleEnum;
+        appDomain->EnumerateAssemblies(&assemblyEnum);
+        assemblyEnum->Next(1, &assembly, &assemblyCount);
 
-			assembly->EnumerateModules(&moduleEnum);
-			moduleEnum->Next(1, &module, &moduleCount);
+        while (assemblyCount)
+        {
+            if (!VisitAssemblyHandler(assembly, GetName(assembly)))
+            {
+                assembly->Release();
+                assemblyEnum->Next(1, &assembly, &assemblyCount);
+                continue;
+            }
 
-			while (moduleCount)
-			{
-				IMetaDataImport2* meta;
-				HCORENUM typeEnum = 0;
-				mdTypeDef type;
-				ULONG typeCount;
+            ULONG moduleCount;
+            ICorDebugModule* module;
+            ICorDebugModuleEnum* moduleEnum;
 
-				module->GetMetaDataInterface(IID_IMetaDataImport2, reinterpret_cast<IUnknown**>(&meta));
-				meta->EnumTypeDefs(&typeEnum, &type, 1, &typeCount);
+            assembly->EnumerateModules(&moduleEnum);
+            moduleEnum->Next(1, &module, &moduleCount);
 
-				while (typeCount)
-				{
-					HCORENUM methodEnum = 0;
-					mdMethodDef method;
-					ULONG methodCount;
-					std::wstring typeName = GetTypeNameFromDef(meta, type);
+            while (moduleCount)
+            {
+                IMetaDataImport2* meta;
+                HCORENUM typeEnum = 0;
+                mdTypeDef type;
+                ULONG typeCount;
 
-					meta->EnumMethods(&methodEnum, type, &method, 1, &methodCount);
-					while (methodCount)
-					{
-						ICorDebugFunction* function;
-						std::wstring methodName;
-						methodName = GetMethodNameFromDef(meta, method);
-						module->GetFunctionFromToken(method, &function);
+                module->GetMetaDataInterface(IID_IMetaDataImport2, reinterpret_cast<IUnknown**>(&meta));
+                meta->EnumTypeDefs(&typeEnum, &type, 1, &typeCount);
 
-						VisitFunctionHandler(function, methodName);
+                while (typeCount)
+                {
+                    HCORENUM methodEnum = 0;
+                    mdMethodDef method;
+                    ULONG methodCount;
+                    std::wstring typeName = GetTypeNameFromDef(meta, type);
 
-						function->Release();
-						meta->EnumMethods(&methodEnum, type, &method, 1, &methodCount);
-					}
+                    meta->EnumMethods(&methodEnum, type, &method, 1, &methodCount);
+                    while (methodCount)
+                    {
+                        ICorDebugFunction* function;
+                        module->GetFunctionFromToken(method, &function);
+                        std::wstring methodName = GetMethodNameFromDef(meta, method);
+                        VisitFunctionHandler(function, typeName + L"." + methodName);
 
-					meta->CloseEnum(methodEnum);
+                        function->Release();
+                        meta->EnumMethods(&methodEnum, type, &method, 1, &methodCount);
+                    }
 
-					meta->EnumTypeDefs(&typeEnum, &type, 1, &typeCount);
-				}
+                    meta->CloseEnum(methodEnum);
 
-				meta->CloseEnum(typeEnum);
-				meta->Release();
+                    meta->EnumTypeDefs(&typeEnum, &type, 1, &typeCount);
+                }
 
-				module->Release();
-				moduleEnum->Next(1, &module, &moduleCount);
-			}
+                meta->CloseEnum(typeEnum);
+                meta->Release();
 
-			moduleEnum->Release();
-			assembly->Release();
-			assemblyEnum->Next(1, &assembly, &assemblyCount);
-		}
+                module->Release();
+                moduleEnum->Next(1, &module, &moduleCount);
+            }
 
-		assemblyEnum->Release();
-		appDomain->Continue(FALSE);
-		appDomain->Detach();
-		debugProcess->Detach();
-		SetEvent(waitForSlimGen);
+            moduleEnum->Release();
+            assembly->Release();
+            assemblyEnum->Next(1, &assembly, &assemblyCount);
+        }
 
-		return S_OK;
-	}
+        assemblyEnum->Release();
+        appDomain->Continue(FALSE);
+        appDomain->Detach();
+        debugProcess->Detach();
+        SetEvent(waitForSlimGen);
 
-	std::wstring RuntimeMethodReplacer::GetMethodNameFromDef( IMetaDataImport2* metadata, mdMethodDef methodDef)
-	{
-		ULONG methodNameLength;
-		PCCOR_SIGNATURE signature;
-		ULONG signatureLength;
-		metadata->GetMethodProps(methodDef, 0, 0, 0, &methodNameLength, 0, 0, 0, 0, 0);
+        return S_OK;
+    }
 
-		std::wstring methodName(methodNameLength, 0);
-		std::wstring signatureStr;
-		metadata->GetMethodProps(methodDef, 0, &methodName[0], methodNameLength, &methodNameLength, 0, &signature, &signatureLength, 0, 0);
+    std::wstring RuntimeMethodReplacer::GetMethodNameFromDef( IMetaDataImport2* metadata, mdMethodDef methodDef)
+    {
+        ULONG methodNameLength;
+        PCCOR_SIGNATURE signature;
+        ULONG signatureLength;
+        metadata->GetMethodProps(methodDef, 0, 0, 0, &methodNameLength, 0, 0, 0, 0, 0);
 
-		wchar_t sigStr[2048];
-		SigFormat formatter(sigStr, 2048, methodDef, metadata, metadata);
-		formatter.Parse(static_cast<const sig_byte*>(signature), signatureLength);
-		signatureStr = sigStr;
+        std::wstring methodName(methodNameLength, 0);
+        std::wstring signatureStr;
+        metadata->GetMethodProps(methodDef, 0, &methodName[0], methodNameLength, &methodNameLength, 0, &signature, &signatureLength, 0, 0);
 
-		return methodName.substr(0, methodName.length() - 1) + signatureStr;
-	}
+        wchar_t sigStr[2048];
+        SigFormat formatter(sigStr, 2048, methodDef, metadata, metadata);
+        formatter.Parse(static_cast<const sig_byte*>(signature), signatureLength);
+        signatureStr = sigStr;
 
-	std::wstring RuntimeMethodReplacer::GetTypeNameFromDef(IMetaDataImport2* metadata, mdTypeDef typeDef)
-	{
-		ULONG typeNameLength;
-		metadata->GetTypeDefProps(typeDef, 0, 0, &typeNameLength, 0, 0);
+        return methodName.substr(0, methodName.length() - 1) + signatureStr;
+    }
 
-		std::wstring typeName(typeNameLength, 0);
-		metadata->GetTypeDefProps(typeDef, &typeName[0], typeNameLength, &typeNameLength, 0, 0);
+    std::wstring RuntimeMethodReplacer::GetTypeNameFromDef(IMetaDataImport2* metadata, mdTypeDef typeDef)
+    {
+        ULONG typeNameLength;
+        metadata->GetTypeDefProps(typeDef, 0, 0, &typeNameLength, 0, 0);
 
-		return std::wstring(typeName.begin(), typeName.end() - 1);
-	}
+        std::wstring typeName(typeNameLength, 0);
+        metadata->GetTypeDefProps(typeDef, &typeName[0], typeNameLength, &typeNameLength, 0, 0);
 
-	std::wstring GetRuntimeVersion(int processId)
-	{
-		Handle handle = OpenProcess(0, TRUE, processId);
-		if (handle.IsInvalid())
-			return L"";
+        return std::wstring(typeName.begin(), typeName.end() - 1);
+    }
 
-		DWORD length;
-		if (FAILED(GetVersionFromProcess(handle, NULL, 0, &length)))
-			throw std::runtime_error("Unable to get version from process.");
+    std::wstring GetRuntimeVersion(int processId)
+    {
+        Handle handle = OpenProcess(PROCESS_ALL_ACCESS, FALSE, processId);
+        if (handle.IsInvalid())
+            throw std::runtime_error("Unable to open process.");
 
-		std::wstring version(length, 0);
-		if (FAILED(GetVersionFromProcess(handle, &version[0], length, &length)))
-			throw std::runtime_error("Unable to get version from process.");
+        std::wstringstream wss;
+        wss<<std::hex<<handle<<std::endl<<processId;
+        MessageBox(0, wss.str().c_str(), L"Test", MB_OK);
 
-		return version;
-	}
+        DWORD length;
+        if (FAILED(GetVersionFromProcess(handle, NULL, 0, &length)))
+            throw std::runtime_error("Unable to get version length from process.");
+
+        std::wstring version(length, 0);
+        if (FAILED(GetVersionFromProcess(handle, &version[0], length, &length)))
+            throw std::runtime_error("Unable to get version from process.");
+
+        return version;
+    }
 }
