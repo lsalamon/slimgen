@@ -28,52 +28,52 @@
 #include <string>
 
 void SetPrivilege(HANDLE token, std::wstring const& privilage) {
-    LUID priv;
-    LookupPrivilegeValue(L"", privilage.c_str(), &priv);
-    TOKEN_PRIVILEGES tp;
-    tp.PrivilegeCount = 1;
-    tp.Privileges[0].Luid = priv;
-    tp.Privileges[0].Attributes = 0;
-    TOKEN_PRIVILEGES prev;
-    DWORD prevLen;
+	LUID priv;
+	LookupPrivilegeValue(L"", privilage.c_str(), &priv);
+	TOKEN_PRIVILEGES tp;
+	tp.PrivilegeCount = 1;
+	tp.Privileges[0].Luid = priv;
+	tp.Privileges[0].Attributes = 0;
+	TOKEN_PRIVILEGES prev;
+	DWORD prevLen;
 
-    if(!AdjustTokenPrivileges(token, FALSE, &tp, sizeof(prev), &prev, &prevLen))
-        throw std::runtime_error("Unable to view token privileges.");
+	if(!AdjustTokenPrivileges(token, FALSE, &tp, sizeof(prev), &prev, &prevLen))
+		throw std::runtime_error("Unable to view token privileges.");
 
-    prev.PrivilegeCount = 1;
-    prev.Privileges[0].Luid = priv;
-    prev.Privileges[0].Attributes = prev.Privileges[0].Attributes | SE_PRIVILEGE_ENABLED;
+	prev.PrivilegeCount = 1;
+	prev.Privileges[0].Luid = priv;
+	prev.Privileges[0].Attributes = prev.Privileges[0].Attributes | SE_PRIVILEGE_ENABLED;
 
-    if(!AdjustTokenPrivileges(token, FALSE, &prev, prevLen, &tp, &prevLen))
-        throw std::runtime_error("Unable to set token privileges.");
+	if(!AdjustTokenPrivileges(token, FALSE, &prev, prevLen, &tp, &prevLen))
+		throw std::runtime_error("Unable to set token privileges.");
 }
 
 void ConfigureDebugPrivilages() {
 	SlimGen::Handle token;
-    if(!OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &token))
+	if(!OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &token))
 		throw std::runtime_error("Unable to open current process.");
 
 	SetPrivilege(token, SE_DEBUG_NAME);
 }
 
-void DoRuntimeMethodReplacement(long processId) {	
-    std::wstring runtimeVersion;
-    std::getline(std::wcin, runtimeVersion);
+void DoRuntimeMethodInformation(long processId) {	
+	std::wstring runtimeVersion;
+	std::getline(std::wcin, runtimeVersion);
 
-	std::vector<SlimGen::MethodReplacement> methods;
+	std::vector<SlimGen::MethodInformation> methods;
 	while (std::cin.peek() != '\n') {
-		SlimGen::MethodReplacement method;
+		SlimGen::MethodInformation method;
 		std::getline(std::wcin, method.Assembly);
 		std::getline(std::wcin, method.Method);
 
 		int chunks;
-        std::cin >> chunks >> std::ws;
+		std::cin >> chunks >> std::ws;
 		method.CompiledData = std::vector<std::vector<char>>(chunks);
 
 		for (int i = 0; i < chunks; i++) {
 			int size;
-            std::cin >> size >> std::ws;
-            
+			std::cin >> size >> std::ws;
+
 			method.CompiledData[i] = std::vector<char>(size);
 			std::cin.read(&method.CompiledData[i][0], size);
 		}
@@ -95,21 +95,21 @@ void DoRuntimeMethodReplacement(long processId) {
 			succeeded = false;
 		}
 	}
-	
+
 	if(!succeeded)
 		throw std::runtime_error("Unable to replace some methods. Check output for listing.");
 }
 
 void DoRuntimeMethodBuilder(long processId) {
-    std::wstring runtimeVersion;
-    std::getline(std::wcin, runtimeVersion);
+	std::wstring runtimeVersion;
+	std::getline(std::wcin, runtimeVersion);
 
 	std::wstring outputDirectory;
 	std::getline(std::wcin, outputDirectory);
 
-	std::vector<SlimGen::MethodReplacement> methods;
+	std::vector<SlimGen::MethodInformation> methods;
 	while(std::cin.peek() != '\n') {
-		SlimGen::MethodReplacement method;
+		SlimGen::MethodInformation method;
 		std::getline(std::wcin, method.Assembly);
 		std::getline(std::wcin, method.Method);
 
@@ -137,14 +137,14 @@ int main(int argc, char** argv)
 		std::wcout<<L"Expected process ID."<<std::endl;
 	}
 
-	if(argc > 2) {
-		if(std::stringstream(argv[2]).str() == "builder") {
+	try {
+		if(argc > 2) {
+			if(std::stringstream(argv[2]).str() == "builder") {
+			}
+		} else {
+			DoRuntimeMethodInformation(processId);
 		}
-	} else {
-		try {
-			DoRuntimeMethodReplacement(processId);
-		} catch(std::runtime_error& error) {
-			std::wcout<<error.what()<<std::endl;
-		}
+	} catch(std::runtime_error& error) {
+		std::wcout<<error.what()<<std::endl;
 	}
 }

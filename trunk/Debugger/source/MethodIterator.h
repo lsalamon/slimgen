@@ -21,17 +21,32 @@
 */
 #pragma once
 
+#include "Debugger.h"
+#include "MethodInformation.h"
+
 namespace SlimGen
 {
-	struct MethodReplacement
+	class MethodIterator : private Debugger
 	{
-		std::wstring Assembly;
-		std::wstring Method;
-		std::vector<std::vector<char>> CompiledData;
-		bool Replaced;
+	public:
+		MethodIterator(std::vector<MethodInformation>& methods) : methods(methods) { }
+		virtual ~MethodIterator() {}
 
-		MethodReplacement() : Replaced(false)
-		{
-		}
+		void Run(int processId, std::wstring const& runtimeVersion);
+
+	protected:
+		virtual void FoundMethod(ICorDebugFunction* function, MethodInformation& method) = 0;
+		CComPtr<ICorDebugProcess> debugProcess;
+	private:
+		HRESULT STDMETHODCALLTYPE CreateAppDomain(ICorDebugProcess *pProcess, ICorDebugAppDomain *pAppDomain);
+		HRESULT STDMETHODCALLTYPE Break(ICorDebugAppDomain* appDomain, ICorDebugThread* thread);
+
+		bool VisitAssemblyHandler(ICorDebugAssembly* assembly, const std::wstring& name);
+		void VisitFunctionHandler(ICorDebugFunction* function, const std::wstring& signature);
+
+		std::vector<MethodInformation>& methods;
+
+		Handle waitForSlimGen;
+		
 	};
 }

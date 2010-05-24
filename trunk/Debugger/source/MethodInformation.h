@@ -21,14 +21,17 @@
 */
 #pragma once
 
-#include "MethodIterator.h"
-
 namespace SlimGen
 {
-	class RuntimeMethodReplacer : public MethodIterator {
-	public:
-		RuntimeMethodReplacer(std::vector<MethodInformation>& methods) : MethodIterator(methods) { }
-	protected:
-		void FoundMethod(ICorDebugFunction* function, MethodInformation& method);
+	struct MethodInformation
+	{
+		std::wstring Assembly;
+		std::wstring Method;
+		std::vector<std::vector<char>> CompiledData;
+		bool Replaced;
+
+		MethodInformation() : Replaced(false)
+		{
+		}
 	};
 }
