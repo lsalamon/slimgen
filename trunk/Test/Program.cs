@@ -31,15 +31,10 @@ namespace Test
             var injector = new Injector("../../../Debugger/x64/Debug/debugger.exe");
             injector.ProcessAssemblies(typeof(Program).Assembly);
 
-            //Console.WriteLine(injector.Errors);
-
             float result2;
             Vector4.DotProduct(ref left, ref right, out result2);
 
             Console.WriteLine("{0} == {1}", result1, result2);
-
-            //Debug.Assert(result1 == result2, "Dot product between SlimGen and non-SlimGen were different!");*/
-
             Console.ReadLine();
         }
     }

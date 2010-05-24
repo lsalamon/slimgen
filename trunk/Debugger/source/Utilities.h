@@ -23,6 +23,21 @@
 
 namespace SlimGen
 {
+	template<class T> std::wstring GetName(T* ptr)
+    {
+        ULONG32 nameLen = 0;
+        ptr->GetName(nameLen, &nameLen, 0);
+
+        std::wstring name(nameLen, 0);
+        ptr->GetName(nameLen, &nameLen, &name[0]);
+
+        return std::wstring(name.begin(), name.end() - 1);
+    }
+
+	std::wstring GetMethodNameFromDef( IMetaDataImport2* metadata, mdMethodDef methodDef);
+	std::wstring GetTypeNameFromDef(IMetaDataImport2* metadata, mdTypeDef typeDef);
+	std::wstring GetRuntimeVersion(int processId);
+
 	class Handle
 	{
 	public:
@@ -32,6 +47,7 @@ namespace SlimGen
 		~Handle() { if(handle) CloseHandle(handle); }
 
 		operator HANDLE&() { return handle; }
+		HANDLE* operator&() { return &handle; }
 		void Reset(HANDLE newValue = 0) { handle = newValue; }
 
 		bool IsInvalid() { return handle == 0 || handle == INVALID_HANDLE_VALUE; }
