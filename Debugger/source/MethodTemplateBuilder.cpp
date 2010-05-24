@@ -24,8 +24,32 @@
 #include "MethodTemplateBuilder.h"
 #include "SigFormat.h"
 
+#include <fstream>
+#include <sstream>
+
 namespace SlimGen {
-	void MethodTemplateBuilder::FoundMethod(ICorDebugFunction* function, MethodInformation& method)
-    {
+	void MethodTemplateBuilder::FoundMethod(ICorDebugFunction* function, MethodInformation& method) {
+		std::string fileName(method.Method.begin(), method.Method.end());
+
+		CComPtr<ICorDebugCode> codePtr;
+        function->GetNativeCode(&codePtr.p);
+        CComQIPtr<ICorDebugCode2> code2Ptr(codePtr);
+
+        ULONG32 chunkCount;
+        code2Ptr->GetCodeChunks(0, &chunkCount, 0);
+        std::vector<CodeChunkInfo> chunks(chunkCount);
+        code2Ptr->GetCodeChunks(chunkCount, &chunkCount, &chunks[0]);
+
+		for(int i = 0; i < chunks.size(); ++i) {
+			std::stringstream chunkName(directory + fileName);
+			chunkName<<i<<".asm";
+			std::ofstream out(chunkName.str().c_str());
+			out<<";==============================================================================="<<std::endl;
+			out<<"; "<<fileName<<std::endl;
+			out<<"; chunk: "<<i<<std::endl;
+			out<<";==============================================================================="<<std::endl;
+			out<<std::endl<<"entry_point:"<<std::endl;
+			out<<"\t\ttimes "<<chunks[i].length<<" - ($-$$) db 0xCC ; fill remaining space with int3."<<std::endl;
+		}
 	}
 }
