@@ -121,7 +121,7 @@ void DoRuntimeMethodBuilder(long processId) {
 		return;
 	}
 
-	SlimGen::MethodTemplateBuilder methodTemplateBuilder(methods);
+	SlimGen::MethodTemplateBuilder methodTemplateBuilder(methods, std::string(outputDirectory.begin(), outputDirectory.end()));
 	methodTemplateBuilder.Run(processId, runtimeVersion);
 }
 

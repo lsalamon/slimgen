@@ -27,8 +27,12 @@
 namespace SlimGen {
 	class MethodTemplateBuilder : public MethodIterator {
 	public:
-		MethodTemplateBuilder(std::vector<MethodInformation>& methods) : MethodIterator(methods) { }
+		MethodTemplateBuilder(std::vector<MethodInformation>& methods, std::string const& outputDirectory) : MethodIterator(methods), directory(outputDirectory) {
+			if(*directory.rbegin() != '\\')
+				directory += "\\";
+		}
 	protected:
 		void FoundMethod(ICorDebugFunction* function, MethodInformation& method);
+		std::string directory;
 	};
 }
