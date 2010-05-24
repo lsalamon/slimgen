@@ -21,27 +21,14 @@
 */
 #pragma once
 
-#include "Debugger.h"
-#include "MethodReplacement.h"
+#include "MethodIterator.h"
+#include "MethodInformation.h"
 
 namespace SlimGen {
-	class MethodTemplateBuilder : private Debugger {
+	class MethodTemplateBuilder : public MethodIterator {
 	public:
-		MethodTemplateBuilder(std::vector<MethodReplacement>& methods) : methods(methods) { }
-
-		void Run(int processId, std::wstring const& runtimeVersion);
-
-	private:
-		HRESULT STDMETHODCALLTYPE CreateAppDomain(ICorDebugProcess *pProcess, ICorDebugAppDomain *pAppDomain);
-		HRESULT STDMETHODCALLTYPE Break(ICorDebugAppDomain* appDomain, ICorDebugThread* thread);
-
-		bool VisitAssemblyHandler(ICorDebugAssembly* assembly, const std::wstring& name);
-		void VisitFunctionHandler(ICorDebugFunction* function, const std::wstring& signature);
-
-		std::vector<MethodReplacement>& methods;
-
-		Handle waitForSlimGen;
-		CComPtr<ICorDebugProcess> debugProcess;
-
+		MethodTemplateBuilder(std::vector<MethodInformation>& methods) : MethodIterator(methods) { }
+	protected:
+		void FoundMethod(ICorDebugFunction* function, MethodInformation& method);
 	};
 }

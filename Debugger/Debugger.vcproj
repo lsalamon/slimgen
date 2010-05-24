@@ -333,6 +333,18 @@
 				>
 			</File>
 			<File
+				RelativePath=".\source\MethodIterator.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\source\MethodIterator.h"
+				>
+			</File>
+			<File
+				RelativePath=".\source\Utilities.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\source\Utilities.h"
 				>
 			</File>
@@ -341,7 +353,7 @@
 			Name="MethodReplacer"
 			>
 			<File
-				RelativePath=".\source\MethodReplacement.h"
+				RelativePath=".\source\MethodInformation.h"
 				>
 			</File>
 			<File
