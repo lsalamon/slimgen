@@ -21,11 +21,13 @@
 */
 #include "stdafx.h"
 #include "RuntimeMethodReplacer.h"
+#include "MethodTemplateBuilder.h"
+
 #include <windows.h>
 #include <sstream>
 #include <string>
 
-void SetPrivilege(HANDLE token, std::wstring privilage) {
+void SetPrivilege(HANDLE token, std::wstring const& privilage) {
     LUID priv;
     LookupPrivilegeValue(L"", privilage.c_str(), &priv);
     TOKEN_PRIVILEGES tp;
@@ -46,96 +48,103 @@ void SetPrivilege(HANDLE token, std::wstring privilage) {
         throw std::runtime_error("Unable to set token privileges.");
 }
 
-int main(int argc, char** argv)
-{
-    std::wstringstream wss;
-	std::cout << "TraceB" << std::endl;
+void ConfigureDebugPrivilages() {
+	SlimGen::Handle token;
+    if(!OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &token))
+		throw std::runtime_error("Unable to open current process.");
 
-	if (argc != 2)
-		return -1;
+	SetPrivilege(token, SE_DEBUG_NAME);
+}
 
-	long processId = 0;
-	std::stringstream(argv[1]) >> processId;
-
+void DoRuntimeMethodReplacement(long processId) {	
     std::wstring runtimeVersion;
     std::getline(std::wcin, runtimeVersion);
 
 	std::vector<SlimGen::MethodReplacement> methods;
-	while (std::cin.peek() != '\n')
-	{
+	while (std::cin.peek() != '\n') {
 		SlimGen::MethodReplacement method;
 		std::getline(std::wcin, method.Assembly);
 		std::getline(std::wcin, method.Method);
 
 		int chunks;
         std::cin >> chunks >> std::ws;
-		std::cout << chunks;
 		method.CompiledData = std::vector<std::vector<char>>(chunks);
 
-		for (int i = 0; i < chunks; i++)
-		{
+		for (int i = 0; i < chunks; i++) {
 			int size;
             std::cin >> size >> std::ws;
-			std::cout << size;
             
 			method.CompiledData[i] = std::vector<char>(size);
 			std::cin.read(&method.CompiledData[i][0], size);
 		}
-
-        
 		methods.push_back(method);
 	}
 
-	
-
-	std::cout << "TraceA" << std::endl;
-
-	if (methods.size() == 0)
-	{
-		std::cout << "No methods to replace." << std::endl;
-		return -2;
+	if (methods.size() == 0) {
+		std::wcout<<L"No methods to replace."<<std::endl;
+		return;
 	}
 
-	std::cout << "Trace1" << std::endl;
-
-    ///////////////////////////////////////////////////////////////////////////
-    HANDLE token;
-    OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &token);
-    try {
-        SetPrivilege(token, L"SeDebugPrivilege");
-    } catch(std::runtime_error& exp) {
-        MessageBoxA(0, exp.what(), "Test", MB_OK);
-    }
-    CloseHandle(token);
-    ///////////////////////////////////////////////////////////////////////////
-
-	try
-	{
-		SlimGen::RuntimeMethodReplacer methodReplacer(methods);
-		methodReplacer.Run(processId, runtimeVersion);
-
-		std::cout << "Trace2" << std::endl;
-	}
-	catch (std::runtime_error &e)
-	{
-		std::cout << e.what();
-        MessageBoxA(0, e.what(), "Test", MB_OK);
-		return -3;
-	}
-
-	std::cout << "Trace3" << std::endl;
+	SlimGen::RuntimeMethodReplacer methodReplacer(methods);
+	methodReplacer.Run(processId, runtimeVersion);
 
 	bool succeeded = true;
-	for (size_t i = 0; i < methods.size(); i++)
-	{
-		if (!methods[i].Replaced)
-		{
-			std::wcout << "Method " << methods[i].Method << " was not replaced.";
+	for (size_t i = 0; i < methods.size(); i++) {
+		if (!methods[i].Replaced) {
+			std::wcout << L"Method " << methods[i].Method << L" was not replaced."<<std::endl;
 			succeeded = false;
 		}
 	}
+	
+	if(!succeeded)
+		throw std::runtime_error("Unable to replace some methods. Check output for listing.");
+}
 
-	std::cout << "Trace4" << std::endl;
+void DoRuntimeMethodBuilder(long processId) {
+    std::wstring runtimeVersion;
+    std::getline(std::wcin, runtimeVersion);
 
-	return succeeded ? 0 : -4;
+	std::wstring outputDirectory;
+	std::getline(std::wcin, outputDirectory);
+
+	std::vector<SlimGen::MethodReplacement> methods;
+	while(std::cin.peek() != '\n') {
+		SlimGen::MethodReplacement method;
+		std::getline(std::wcin, method.Assembly);
+		std::getline(std::wcin, method.Method);
+
+		methods.push_back(method);
+	}
+
+	if (methods.size() == 0) {
+		std::wcout<<L"No methods to replace."<<std::endl;
+		return;
+	}
+
+	SlimGen::MethodTemplateBuilder methodTemplateBuilder(methods);
+	methodTemplateBuilder.Run(processId, runtimeVersion);
+}
+
+int main(int argc, char** argv)
+{
+	if(argc < 2) {
+		std::cout<<"Expected at least one argument."<<std::endl;
+		return -1;
+	}
+
+	long processId;
+	if(!(std::stringstream(argv[1]) >> processId)) {
+		std::wcout<<L"Expected process ID."<<std::endl;
+	}
+
+	if(argc > 2) {
+		if(std::stringstream(argv[2]).str() == "builder") {
+		}
+	} else {
+		try {
+			DoRuntimeMethodReplacement(processId);
+		} catch(std::runtime_error& error) {
+			std::wcout<<error.what()<<std::endl;
+		}
+	}
 }

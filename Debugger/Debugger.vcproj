@@ -333,7 +333,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\source\Handle.h"
+				RelativePath=".\source\Utilities.h"
 				>
 			</File>
 		</Filter>
@@ -366,6 +366,18 @@
 			</File>
 			<File
 				RelativePath=".\source\SigParse.h"
+				>
+			</File>
+		</Filter>
+		<Filter
+			Name="TemplateBuilder"
+			>
+			<File
+				RelativePath=".\source\MethodTemplateBuilder.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\source\MethodTemplateBuilder.h"
 				>
 			</File>
 		</Filter>

@@ -24,12 +24,10 @@
 #include "Debugger.h"
 #include "MethodReplacement.h"
 
-namespace SlimGen
-{
-	class RuntimeMethodReplacer : private Debugger
-	{
+namespace SlimGen {
+	class MethodTemplateBuilder : private Debugger {
 	public:
-		RuntimeMethodReplacer(std::vector<MethodReplacement>& methods) : methods(methods) { }
+		MethodTemplateBuilder(std::vector<MethodReplacement>& methods) : methods(methods) { }
 
 		void Run(int processId, std::wstring const& runtimeVersion);
 
@@ -37,7 +35,6 @@ namespace SlimGen
 		HRESULT STDMETHODCALLTYPE CreateAppDomain(ICorDebugProcess *pProcess, ICorDebugAppDomain *pAppDomain);
 		HRESULT STDMETHODCALLTYPE Break(ICorDebugAppDomain* appDomain, ICorDebugThread* thread);
 
-		void ReplaceMethod(ICorDebugFunction* function, MethodReplacement& method);
 		bool VisitAssemblyHandler(ICorDebugAssembly* assembly, const std::wstring& name);
 		void VisitFunctionHandler(ICorDebugFunction* function, const std::wstring& signature);
 
@@ -45,5 +42,6 @@ namespace SlimGen
 
 		Handle waitForSlimGen;
 		CComPtr<ICorDebugProcess> debugProcess;
+
 	};
 }

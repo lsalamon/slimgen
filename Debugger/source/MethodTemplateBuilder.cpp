@@ -21,12 +21,11 @@
 */
 #include "stdafx.h"
 
-#include "RuntimeMethodReplacer.h"
+#include "MethodTemplateBuilder.h"
 #include "SigFormat.h"
 
-namespace SlimGen
-{
-    void RuntimeMethodReplacer::Run(int processId, std::wstring const& runtimeVersion)
+namespace SlimGen {
+	void MethodTemplateBuilder::Run(int processId, std::wstring const& runtimeVersion)
     {
         if (FAILED(CoInitialize(0)))
             throw std::runtime_error("Unable to initialize COM.");
@@ -52,47 +51,7 @@ namespace SlimGen
         CoUninitialize();
     }
 
-    void RuntimeMethodReplacer::ReplaceMethod(ICorDebugFunction* function, MethodReplacement& method)
-    {
-        std::string name(method.Method.begin(), method.Method.end());
-        if (method.Replaced)
-            throw std::runtime_error(std::string("Attempt to replace method ") + name + " multiple times.");
-
-        CComPtr<ICorDebugCode> codePtr;
-        function->GetNativeCode(&codePtr.p);
-        CComQIPtr<ICorDebugCode2> code2Ptr(codePtr);
-
-        ULONG32 chunkCount;
-        code2Ptr->GetCodeChunks(0, &chunkCount, 0);
-        std::vector<CodeChunkInfo> chunks(chunkCount);
-        code2Ptr->GetCodeChunks(chunkCount, &chunkCount, &chunks[0]);
-
-        if (method.CompiledData.size() != chunkCount)
-            throw std::runtime_error(name + " does not have the correct number of code chunks.");
-
-        for (size_t i = 0; i < chunks.size(); i++)
-        {
-            if (method.CompiledData[i].size() > chunks[i].length)
-            {
-                std::stringstream error;
-                error << "Chunk " << i << " for method " << name << " does not have the right code size.";
-                throw std::runtime_error(error.str());
-            }
-
-            SIZE_T written;
-            debugProcess->WriteMemory(chunks[i].startAddr, method.CompiledData[i].size(), reinterpret_cast<BYTE*>(&method.CompiledData[i][0]), &written);
-
-            if (written != method.CompiledData[i].size())
-            {
-                std::stringstream error;
-                error << "Chunk " << i << " for method " << name << " failed to write completely.";
-                throw std::runtime_error(error.str());
-            }
-        }
-        method.Replaced = true;
-    }
-
-    bool RuntimeMethodReplacer::VisitAssemblyHandler(ICorDebugAssembly*, const std::wstring& name)
+    bool MethodTemplateBuilder::VisitAssemblyHandler(ICorDebugAssembly*, const std::wstring& name)
     {
         for (size_t i = 0; i < methods.size(); i++)
         {
@@ -103,7 +62,7 @@ namespace SlimGen
         return true;
     }
 
-    void RuntimeMethodReplacer::VisitFunctionHandler(ICorDebugFunction* function, const std::wstring& signature)
+    void MethodTemplateBuilder::VisitFunctionHandler(ICorDebugFunction* function, const std::wstring& signature)
     {
         if(signature.find(L"DotProduct") != signature.npos) {
             std::wcout<<signature<<std::endl;
@@ -114,20 +73,20 @@ namespace SlimGen
 
             if(signature == methods[i].Method)
             {
-                ReplaceMethod(function, methods[i]);
+                //ReplaceMethod(function, methods[i]);
                 break;
             }
         }
     }
 
-    HRESULT STDMETHODCALLTYPE RuntimeMethodReplacer::CreateAppDomain(ICorDebugProcess *pProcess, ICorDebugAppDomain *pAppDomain)
+    HRESULT STDMETHODCALLTYPE MethodTemplateBuilder::CreateAppDomain(ICorDebugProcess *pProcess, ICorDebugAppDomain *pAppDomain)
     {
         pAppDomain->Attach();
         pProcess->Continue(FALSE);
         return S_OK;
     }
 
-    HRESULT STDMETHODCALLTYPE RuntimeMethodReplacer::Break(ICorDebugAppDomain* appDomain, ICorDebugThread*)
+    HRESULT STDMETHODCALLTYPE MethodTemplateBuilder::Break(ICorDebugAppDomain* appDomain, ICorDebugThread*)
     {
         ULONG assemblyCount;
         ICorDebugAssembly* assembly;
@@ -205,55 +164,5 @@ namespace SlimGen
         SetEvent(waitForSlimGen);
 
         return S_OK;
-    }
-
-    std::wstring GetMethodNameFromDef( IMetaDataImport2* metadata, mdMethodDef methodDef)
-    {
-        ULONG methodNameLength;
-        PCCOR_SIGNATURE signature;
-        ULONG signatureLength;
-        metadata->GetMethodProps(methodDef, 0, 0, 0, &methodNameLength, 0, 0, 0, 0, 0);
-
-        std::wstring methodName(methodNameLength, 0);
-        std::wstring signatureStr;
-        metadata->GetMethodProps(methodDef, 0, &methodName[0], methodNameLength, &methodNameLength, 0, &signature, &signatureLength, 0, 0);
-
-        wchar_t sigStr[2048];
-        SigFormat formatter(sigStr, 2048, methodDef, metadata, metadata);
-        formatter.Parse(static_cast<const sig_byte*>(signature), signatureLength);
-        signatureStr = sigStr;
-
-        return methodName.substr(0, methodName.length() - 1) + signatureStr;
-    }
-
-    std::wstring GetTypeNameFromDef(IMetaDataImport2* metadata, mdTypeDef typeDef)
-    {
-        ULONG typeNameLength;
-        metadata->GetTypeDefProps(typeDef, 0, 0, &typeNameLength, 0, 0);
-
-        std::wstring typeName(typeNameLength, 0);
-        metadata->GetTypeDefProps(typeDef, &typeName[0], typeNameLength, &typeNameLength, 0, 0);
-
-        return std::wstring(typeName.begin(), typeName.end() - 1);
-    }
-
-    std::wstring GetRuntimeVersion(int processId)
-    {
-        Handle handle = OpenProcess(PROCESS_ALL_ACCESS, FALSE, processId);
-        if (handle.IsInvalid())
-            throw std::runtime_error("Unable to open process.");
-
-        std::wstringstream wss;
-        wss<<std::hex<<handle<<std::endl<<processId;
-
-        DWORD length;
-        if (FAILED(GetVersionFromProcess(handle, NULL, 0, &length)))
-            throw std::runtime_error("Unable to get version length from process.");
-
-        std::wstring version(length, 0);
-        if (FAILED(GetVersionFromProcess(handle, &version[0], length, &length)))
-            throw std::runtime_error("Unable to get version from process.");
-
-        return version;
     }
 }

@@ -21,7 +21,7 @@
 */
 #pragma once
 
-#include "Handle.h"
+#include "Utilities.h"
 
 #define CONTINUE_IMPL(p) { p->Continue(FALSE); return S_OK; }
 
