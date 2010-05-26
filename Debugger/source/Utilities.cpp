@@ -21,6 +21,7 @@
 */
 #include "stdafx.h"
 
+#include "Utilities.h"
 #include "RuntimeMethodReplacer.h"
 #include "SigFormat.h"
 

@@ -23,10 +23,6 @@
 #include "RuntimeMethodReplacer.h"
 #include "MethodTemplateBuilder.h"
 
-#include <windows.h>
-#include <sstream>
-#include <string>
-
 void SetPrivilege(HANDLE token, std::wstring const& privilage) {
 	LUID priv;
 	LookupPrivilegeValue(L"", privilage.c_str(), &priv);
@@ -125,8 +121,7 @@ void DoRuntimeMethodBuilder(long processId) {
 	methodTemplateBuilder.Run(processId, runtimeVersion);
 }
 
-int main(int argc, char** argv)
-{
+int main(int argc, char** argv) {
 	if(argc < 2) {
 		std::cout<<"Expected at least one argument."<<std::endl;
 		return -1;
@@ -140,6 +135,7 @@ int main(int argc, char** argv)
 	try {
 		if(argc > 2) {
 			if(std::stringstream(argv[2]).str() == "builder") {
+                DoRuntimeMethodBuilder(processId);
 			}
 		} else {
 			DoRuntimeMethodInformation(processId);

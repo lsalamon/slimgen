@@ -25,7 +25,6 @@
 #include "SigFormat.h"
 
 #include <fstream>
-#include <sstream>
 
 namespace SlimGen {
 	void MethodTemplateBuilder::FoundMethod(ICorDebugFunction* function, MethodInformation& method) {
