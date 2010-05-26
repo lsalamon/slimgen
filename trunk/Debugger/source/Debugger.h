@@ -23,7 +23,7 @@
 
 #include "Utilities.h"
 
-#define CONTINUE_IMPL(p) { p->Continue(FALSE); return S_OK; }
+#define CONTINUE_IMPL( p) { p->Continue(FALSE); return S_OK; }
 
 namespace SlimGen
 {

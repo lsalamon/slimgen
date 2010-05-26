@@ -22,7 +22,6 @@
 #pragma once
 
 #include "MethodIterator.h"
-#include "MethodInformation.h"
 
 namespace SlimGen {
 	class MethodTemplateBuilder : public MethodIterator {
