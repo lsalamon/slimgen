@@ -29,126 +29,167 @@ using System.Text;
 using System.Threading;
 using System.Reflection;
 
-namespace SlimGen {
-	public class Injector {
-		public static readonly Platform Platform;
+namespace SlimGen
+{
+    public class Injector
+    {
+        public static readonly Platform Platform;
 
-		public string DebuggerPath {
-			get;
-			private set;
-		}
+        public string DebuggerPath
+        {
+            get;
+            private set;
+        }
 
-		public string Errors {
-			get;
-			private set;
-		}
+        public string Errors
+        {
+            get;
+            private set;
+        }
 
-		static Injector() {
-			Platform = IntPtr.Size == 4 ? Platform.X86 : Platform.X64;
-		}
+        static Injector()
+        {
+            Platform = IntPtr.Size == 4 ? Platform.X86 : Platform.X64;
+        }
 
-		public Injector(string debuggerPath) {
-			DebuggerPath = debuggerPath;
-		}
+        public Injector(string debuggerPath)
+        {
+            DebuggerPath = debuggerPath;
+        }
 
-		public void ProcessAssemblies(params Assembly[] assemblies) {
-			var methods = new List<MethodReplacement>();
+        public void ProcessAssemblies(params Assembly[] assemblies)
+        {
+            var methods = new List<MethodReplacement>();
 
-			foreach (var assembly in assemblies) {
-				foreach (var type in assembly.GetTypes()) {
-					foreach (var method in type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static)) {
-						ProcessMethod(method, methods);
-					}
-				}
-			}
+            foreach (var assembly in assemblies)
+            {
+                foreach (var type in assembly.GetTypes())
+                {
+                    foreach (var method in type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static))
+                    {
+                        ProcessMethod(method, methods);
+                    }
+                }
+            }
 
-			Replace(methods);
-		}
+            Replace(methods);
+        }
 
-		private static void ProcessMethod(MethodBase method, ICollection<MethodReplacement> methods) {
-			var attributes = method.GetCustomAttributes(typeof (ReplaceMethodAttribute), false);
+        public bool Replace(IEnumerable<MethodReplacement> methods)
+        {
+            methods = Filter(methods);
+            return Launch(false, stream =>
+            {
+                foreach (var method in methods)
+                {
+                    RuntimeHelpers.PrepareMethod(method.Method.MethodHandle);
+                    method.Write(stream);
+                }
+            });
+        }
 
-			foreach (ReplaceMethodAttribute replaceMethodAttribute in attributes) {
-				var dataSets = new byte[replaceMethodAttribute.DataFiles.Length][];
-				var isMissingData = false;
-				for (var i = 0; i < dataSets.Length; ++i) {
-					try {
-						dataSets[i] = File.ReadAllBytes(replaceMethodAttribute.DataFiles[i]);
-					} catch(Exception) {
-						isMissingData = true;
-						break;
-					}
-				}
-				if(isMissingData)
-					continue;
-				methods.Add(new MethodReplacement(method, replaceMethodAttribute.Platform, replaceMethodAttribute.InstructionSet, dataSets));
-			}
-		}
+        public bool GenerateTemplates(IEnumerable<MethodBase> methods, string outputDirectory)
+        {
+            return Launch(true, stream =>
+            {
+                stream.WriteLine(outputDirectory);
+                foreach (var method in methods)
+                {
+                    RuntimeHelpers.PrepareMethod(method.MethodHandle);
+                    stream.WriteLine(method.DeclaringType.Assembly.FullName);
+                    stream.WriteLine(MethodReplacement.GetMethodSignature(method));
+                }
+            });
+        }
 
-		public bool Replace(IEnumerable<MethodReplacement> methods) {
-			methods = Filter(methods);
-			return Launch(methods);
-		}
+        static void ProcessMethod(MethodBase method, ICollection<MethodReplacement> methods)
+        {
+            var attributes = method.GetCustomAttributes(typeof(ReplaceMethodAttribute), false);
 
-		static IEnumerable<MethodReplacement> Filter(IEnumerable<MethodReplacement> methods) {
-			var stack = new Dictionary<MethodBase, object>();
-			var map = new Dictionary<MethodBase, MethodReplacement>();
+            foreach (ReplaceMethodAttribute replaceMethodAttribute in attributes)
+            {
+                var dataSets = new byte[replaceMethodAttribute.DataFiles.Length][];
+                var isMissingData = false;
+                for (var i = 0; i < dataSets.Length; ++i)
+                {
+                    try
+                    {
+                        dataSets[i] = File.ReadAllBytes(replaceMethodAttribute.DataFiles[i]);
+                    }
+                    catch (Exception)
+                    {
+                        isMissingData = true;
+                        break;
+                    }
+                }
+                if (isMissingData)
+                    continue;
+                methods.Add(new MethodReplacement(method, replaceMethodAttribute.Platform, replaceMethodAttribute.InstructionSet, dataSets));
+            }
+        }
 
-			foreach (var frame in new StackTrace(false).GetFrames())
-				stack.Add(frame.GetMethod(), null);
+        static IEnumerable<MethodReplacement> Filter(IEnumerable<MethodReplacement> methods)
+        {
+            var stack = new Dictionary<MethodBase, object>();
+            var map = new Dictionary<MethodBase, MethodReplacement>();
 
-			foreach (var method in methods) {
-				if (method.Platform != Platform || (CpuInformation.InstructionSets & method.InstructionSet) == 0)
-					continue;
+            foreach (var frame in new StackTrace(false).GetFrames())
+                stack.Add(frame.GetMethod(), null);
 
-				if (stack.ContainsKey(method.Method))
-					throw new InvalidOperationException("Cannot replace a method that is currently on the call stack.");
+            foreach (var method in methods)
+            {
+                if (method.Platform != Platform || (CpuInformation.InstructionSets & method.InstructionSet) == 0)
+                    continue;
 
-				if (map.ContainsKey(method.Method)) {
-					if (method.InstructionSet.CompareTo(map[method.Method]) > 0)
-						map[method.Method] = method;
-				} else
-					map.Add(method.Method, method);
-			}
+                if (stack.ContainsKey(method.Method))
+                    throw new InvalidOperationException("Cannot replace a method that is currently on the call stack.");
 
-			return map.Values;
-		}
+                if (map.ContainsKey(method.Method))
+                {
+                    if (method.InstructionSet.CompareTo(map[method.Method]) > 0)
+                        map[method.Method] = method;
+                }
+                else
+                    map.Add(method.Method, method);
+            }
 
-		bool Launch(IEnumerable<MethodReplacement> methods) {
-			Errors = string.Empty;
+            return map.Values;
+        }
 
-			using (var process = new Process()) {
-				process.StartInfo.Arguments = Process.GetCurrentProcess().Id.ToString(CultureInfo.InvariantCulture);
-				process.StartInfo.CreateNoWindow = true;
-				process.StartInfo.FileName = DebuggerPath;
-				process.StartInfo.UseShellExecute = false;
-				process.StartInfo.RedirectStandardInput = true;
-				process.StartInfo.RedirectStandardOutput = true;
-				process.Start();
+        bool Launch(bool buildTemplates, Action<StreamWriter> writeMethods)
+        {
+            Errors = string.Empty;
 
-				process.StandardInput.WriteLine(this.GetType().Assembly.ImageRuntimeVersion);
+            using (var process = new Process())
+            {
+                process.StartInfo.Arguments = Process.GetCurrentProcess().Id.ToString(CultureInfo.InvariantCulture) + (buildTemplates ? " builder" : "");
+                process.StartInfo.CreateNoWindow = true;
+                process.StartInfo.FileName = DebuggerPath;
+                process.StartInfo.UseShellExecute = false;
+                process.StartInfo.RedirectStandardInput = true;
+                process.StartInfo.RedirectStandardOutput = true;
+                process.Start();
 
-				foreach (var method in methods) {
-					RuntimeHelpers.PrepareMethod(method.Method.MethodHandle);
-					method.Write(process.StandardInput);
-				}
+                process.StandardInput.WriteLine(GetType().Assembly.ImageRuntimeVersion);
 
-				process.StandardInput.WriteLine();
-				process.StandardInput.Flush();
+                writeMethods(process.StandardInput);
 
-				while (!Debugger.IsAttached && !process.HasExited)
-					Thread.Sleep(10);
+                process.StandardInput.WriteLine();
+                process.StandardInput.Flush();
 
-				if (process.HasExited)
-					return false;
+                while (!Debugger.IsAttached && !process.HasExited)
+                    Thread.Sleep(10);
 
-				Debugger.Break();
+                if (process.HasExited)
+                    return false;
 
-				Errors = process.StandardOutput.ReadToEnd();
-				process.WaitForExit();
+                Debugger.Break();
 
-				return process.ExitCode == 0;
-			}
-		}
-	}
+                Errors = process.StandardOutput.ReadToEnd();
+                process.WaitForExit();
+
+                return process.ExitCode == 0;
+            }
+        }
+    }
 }
