@@ -91,7 +91,7 @@ namespace SlimGen
             }
         }
 
-        static string GetMethodSignature(MethodBase method)
+        public static string GetMethodSignature(MethodBase method)
         {
             var builder = new StringBuilder();
             builder.Append(method.DeclaringType.FullName + "." + method.Name);

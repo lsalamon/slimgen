@@ -132,15 +132,23 @@ int main(int argc, char** argv) {
 		std::wcout<<L"Expected process ID."<<std::endl;
 	}
 
-	try {
-		if(argc > 2) {
-			if(std::stringstream(argv[2]).str() == "builder") {
+	try
+	{
+		if(argc > 2)
+		{
+			if(std::stringstream(argv[2]).str() == "builder")
+			{
                 DoRuntimeMethodBuilder(processId);
 			}
-		} else {
+		}
+		else
+		{
 			DoRuntimeMethodInformation(processId);
 		}
-	} catch(std::runtime_error& error) {
+	}
+	catch(std::runtime_error& error)
+	{
 		std::wcout<<error.what()<<std::endl;
+		return -2;
 	}
 }
