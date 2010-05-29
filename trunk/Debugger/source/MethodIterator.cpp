@@ -24,10 +24,8 @@
 #include "MethodIterator.h"
 #include "SigFormat.h"
 
-namespace SlimGen
-{
-    void MethodIterator::Run(int processId, std::wstring const& runtimeVersion)
-    {
+namespace SlimGen {
+    void MethodIterator::Run(int processId, std::wstring const& runtimeVersion) {
         if (FAILED(CoInitialize(0)))
             throw std::runtime_error("Unable to initialize COM.");
 
@@ -52,10 +50,8 @@ namespace SlimGen
         CoUninitialize();
     }
 
-    bool MethodIterator::VisitAssemblyHandler(ICorDebugAssembly*, const std::wstring& name)
-    {
-        for (size_t i = 0; i < methods.size(); i++)
-        {
+    bool MethodIterator::VisitAssemblyHandler(ICorDebugAssembly*, const std::wstring& name) {
+        for (size_t i = 0; i < methods.size(); i++) {
             if(methods[i].Assembly == name)
                 return true;
         }
@@ -63,32 +59,27 @@ namespace SlimGen
         return true;
     }
 
-    void MethodIterator::VisitFunctionHandler(ICorDebugFunction* function, const std::wstring& signature)
-    {
+    void MethodIterator::VisitFunctionHandler(ICorDebugFunction* function, const std::wstring& signature) {
         if(signature.find(L"DotProduct") != signature.npos) {
             std::wcout<<signature<<std::endl;
         }
 
-        for(size_t i = 0; i < methods.size(); i++)
-        {
+        for(size_t i = 0; i < methods.size(); i++) {
 
-            if(signature == methods[i].Method)
-            {
+            if(signature == methods[i].Method) {
                 FoundMethod(function, methods[i]);
                 break;
             }
         }
     }
 
-    HRESULT STDMETHODCALLTYPE MethodIterator::CreateAppDomain(ICorDebugProcess *pProcess, ICorDebugAppDomain *pAppDomain)
-    {
+    HRESULT STDMETHODCALLTYPE MethodIterator::CreateAppDomain(ICorDebugProcess *pProcess, ICorDebugAppDomain *pAppDomain) {
         pAppDomain->Attach();
         pProcess->Continue(FALSE);
         return S_OK;
     }
 
-    HRESULT STDMETHODCALLTYPE MethodIterator::Break(ICorDebugAppDomain* appDomain, ICorDebugThread*)
-    {
+    HRESULT STDMETHODCALLTYPE MethodIterator::Break(ICorDebugAppDomain* appDomain, ICorDebugThread*) {
         ULONG assemblyCount;
         ICorDebugAssembly* assembly;
         ICorDebugAssemblyEnum* assemblyEnum;
@@ -96,10 +87,8 @@ namespace SlimGen
         appDomain->EnumerateAssemblies(&assemblyEnum);
         assemblyEnum->Next(1, &assembly, &assemblyCount);
 
-        while (assemblyCount)
-        {
-            if (!VisitAssemblyHandler(assembly, GetName(assembly)))
-            {
+        while (assemblyCount) {
+            if (!VisitAssemblyHandler(assembly, GetName(assembly))) {
                 assembly->Release();
                 assemblyEnum->Next(1, &assembly, &assemblyCount);
                 continue;
@@ -112,8 +101,7 @@ namespace SlimGen
             assembly->EnumerateModules(&moduleEnum);
             moduleEnum->Next(1, &module, &moduleCount);
 
-            while (moduleCount)
-            {
+            while (moduleCount) {
                 IMetaDataImport2* meta;
                 HCORENUM typeEnum = 0;
                 mdTypeDef type;
@@ -122,16 +110,14 @@ namespace SlimGen
                 module->GetMetaDataInterface(IID_IMetaDataImport2, reinterpret_cast<IUnknown**>(&meta));
                 meta->EnumTypeDefs(&typeEnum, &type, 1, &typeCount);
 
-                while (typeCount)
-                {
+                while (typeCount) {
                     HCORENUM methodEnum = 0;
                     mdMethodDef method;
                     ULONG methodCount;
                     std::wstring typeName = GetTypeNameFromDef(meta, type);
 
                     meta->EnumMethods(&methodEnum, type, &method, 1, &methodCount);
-                    while (methodCount)
-                    {
+                    while (methodCount) {
                         ICorDebugFunction* function;
                         module->GetFunctionFromToken(method, &function);
                         std::wstring methodName = GetMethodNameFromDef(meta, method);
