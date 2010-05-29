@@ -39,21 +39,14 @@ namespace SlimGen {
 		std::vector<CodeChunkInfo> chunks(chunkCount);
 		code2Ptr->GetCodeChunks(chunkCount, &chunkCount, &chunks[0]);
 
-		CComPtr<ICorDebugModule> module;
-		function->GetModule(&module.p);
-		CORDB_ADDRESS baseAddress;
-		module->GetBaseAddress(&baseAddress);
-
 		for(int i = 0; i < chunks.size(); ++i) {
-			std::stringstream chunkName(directory + fileName);
-			chunkName<<i<<".asm";
+			std::stringstream chunkName;
+            chunkName<<(directory + fileName)<<"."<<i<<".asm";
 			std::ofstream out(chunkName.str().c_str());
 			out<<";==============================================================================="<<std::endl;
 			out<<"; "<<fileName<<std::endl;
 			out<<"; chunk: "<<i<<std::endl;
-			out<<"; RVA: "<<std::hex<<(chunks[i].startAddr - baseAddress)<<std::endl;
 			out<<";==============================================================================="<<std::endl;
-			out<<"[ORG "<<std::hex<<(chunks[i].startAddr - baseAddress)<<"h]"<<std::endl;
 			out<<std::endl<<"entry_point:"<<std::endl;
 			out<<"\t\ttimes "<<chunks[i].length<<" - ($-$$) db 0xCC ; fill remaining space with int3."<<std::endl;
 		}
