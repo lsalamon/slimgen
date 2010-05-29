@@ -77,7 +77,8 @@ namespace Builder {
 					node.ImageKey = "class";
 					node.SelectedImageKey = "class";
 
-					var newNode = node.Nodes.Add(MethodReplacement.GetMethodSignature(method), name, "method", "method");
+					var sig = MethodReplacement.GetMethodSignature(method);
+					var newNode = node.Nodes.Add(sig, sig.Substring(sig.LastIndexOf(".", sig.IndexOf("(")) + 1), "method", "method");
 					newNode.Tag = method;
 
 					var attributes = method.GetCustomAttributes(typeof(ReplaceMethodAttribute), false);
