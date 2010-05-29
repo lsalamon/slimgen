@@ -24,10 +24,8 @@
 #include "Debugger.h"
 #include "MethodInformation.h"
 
-namespace SlimGen
-{
-	class MethodIterator : private Debugger
-	{
+namespace SlimGen {
+	class MethodIterator : private Debugger {
 	public:
 		MethodIterator(std::vector<MethodInformation>& methods) : methods(methods) { }
 		virtual ~MethodIterator() {}
@@ -47,6 +45,5 @@ namespace SlimGen
 		std::vector<MethodInformation>& methods;
 
 		Handle waitForSlimGen;
-		
 	};
 }
