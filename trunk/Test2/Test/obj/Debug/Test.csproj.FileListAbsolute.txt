@@ -1,0 +1,16 @@
+C:\Users\Mike\Desktop\Test\Test\bin\Debug\Test.exe
+C:\Users\Mike\Desktop\Test\Test\bin\Debug\Test.pdb
+C:\Users\Mike\Desktop\Test\Test\bin\Debug\SlimMath.dll
+C:\Users\Mike\Desktop\Test\Test\bin\Debug\SlimMath.pdb
+C:\Users\Mike\Desktop\Test\Test\obj\Debug\ResolveAssemblyReference.cache
+C:\Users\Mike\Desktop\Test\Test\obj\Debug\Test.exe
+C:\Users\Mike\Desktop\Test\Test\obj\Debug\Test.pdb
+C:\Users\Mike\Desktop\Test\Test\bin\Debug\SlimGen.dll
+C:\Users\Mike\Desktop\Test\Test\bin\Debug\SlimGen.pdb
+C:\Users\Mike\Desktop\SlimGen\Test2\Test\obj\Debug\Test.exe
+C:\Users\Mike\Desktop\SlimGen\Test2\Test\obj\Debug\Test.pdb
+C:\Users\Mike\Desktop\SlimGen\Test2\Test\bin\Debug\Test.exe
+C:\Users\Mike\Desktop\SlimGen\Test2\Test\bin\Debug\Test.pdb
+C:\Users\Mike\Desktop\SlimGen\Test2\Test\bin\Debug\SlimMath.pdb
+C:\Users\Mike\Desktop\SlimGen\Test2\Test\bin\Debug\SlimGen.pdb
+C:\Users\Mike\Desktop\SlimGen\Test2\Test\obj\Debug\ResolveAssemblyReference.cache
