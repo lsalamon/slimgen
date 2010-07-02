@@ -5,8 +5,8 @@
 BITS 64
 entry_point:
 
-		lddqu xmm0, [rcx];
-		lddqu xmm1, [rdx];
+		movups xmm0, [rcx];
+		movups xmm1, [rdx];
 		dpps xmm0, xmm1, 0xFF;
 		rep ret;
 
