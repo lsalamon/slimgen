@@ -14,7 +14,7 @@ namespace Test
 		[ReplaceMethod(DataFiles = new []{"dp.sse3.x64"}, InstructionSet = InstructionSets.SSE3, Platform = Platform.X64)]
         public static void DotProduct(ref Vector4 left, ref Vector4 right, out float result)
         {
-            result = left.X * right.X + left.Y * right.Y + left.Z * right.Z + left.W * right.W;
+            result = left.X * right.X + left.Y * right.Y + left.Z * right.Z + left.W * right.W + 1;
         }
     }
 
@@ -28,8 +28,10 @@ namespace Test
             float result1;
             Vector4.DotProduct(ref left, ref right, out result1);
 
-            var injector = new Injector("../../../Debugger/x64/Debug/debugger.exe");
+            var injector = new Injector("../../../Debugger/x64/Release/debugger.exe");
             injector.ProcessAssemblies(typeof(Program).Assembly);
+
+            Console.WriteLine(injector.Errors);
 
             float result2;
             Vector4.DotProduct(ref left, ref right, out result2);
